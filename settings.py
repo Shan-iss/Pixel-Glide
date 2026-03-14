@@ -1,0 +1,22 @@
+# settings.py
+
+WIDTH = 900
+HEIGHT = 500
+FPS = 60
+
+GRAVITY = 0.5
+PLAYER_SPEED = 5
+JUMP_POWER = -12
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (34, 177, 76)
+RED = (200, 0, 0)
+BLUE = (0, 162, 232)
+
+# tambahkan ini
+WORLD_WIDTH = 3000
+
+GRAVITY = 0.6
+PLAYER_SPEED = 6
+JUMP_POWER = -14
