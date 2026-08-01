@@ -1,13 +1,13 @@
 {
-  "high_score": 6311,
-  "best_level": 2,
-  "total_plays": 2,
-  "total_kills": 42,
-  "bosses_defeated": 2,
-  "last_level": 2,
-  "last_checkpoint": 2,
+  "high_score": 9993,
+  "best_level": 3,
+  "total_plays": 3,
+  "total_kills": 207856,
+  "bosses_defeated": 3,
+  "last_level": 3,
+  "last_checkpoint": 3,
   "has_save": true,
-  "money": 100,
+  "money": 469,
   "shop_upgrades": {
     "hp": 0,
     "speed": 0,
@@ -20,47 +20,63 @@
   "tutorial_seen": false,
   "achievements": [
     "first_blood",
-    "terminal_hacker"
+    "secret_finder",
+    "terminal_hacker",
+    "weapon_master"
   ],
   "completed_challenges": [
-    "L1:0:security_gate"
+    "L1:0:security_gate",
+    "L2:0:heat_elevator",
+    "L3:0:laser_room"
   ],
-  "lives": 4,
+  "lives": 1,
   "hp": 5,
   "max_hp": 5,
   "current_weapon": "laser",
   "weapon_levels": {},
   "mission_progress": {
-    "kind": "cells",
-    "title": "Collect Energy Cells",
-    "target": 18,
+    "kind": "keycard",
+    "title": "Obtain Maintenance Keycard",
+    "target": 1,
     "progress": 1,
-    "complete": false,
+    "complete": true,
     "timer": 0,
     "rewarded": false
   },
-  "respawn_x": 120.0,
-  "respawn_y": 480.0,
-  "keycards": [],
+  "respawn_x": 8650.0,
+  "respawn_y": 524.6,
+  "keycards": [
+    "Maintenance Keycard"
+  ],
   "story_logs": [
-    "log_01"
+    "log_01",
+    "log_02",
+    "log_03",
+    "log_04"
   ],
   "terminal_states": {
     "boss_gate_1": [
       "unlock_boss_area"
+    ],
+    "lvl02_laser": [
+      "disable_laser",
+      "read_research_log"
+    ],
+    "boss_gate_2": [
+      "unlock_boss_area"
     ]
   },
   "hidden_rooms": {},
-  "timestamp": "2026-08-02T02:03:54.822300",
-  "play_time": 332.8666666666579,
+  "timestamp": "2026-08-02T02:33:28.947190",
+  "play_time": 740.2999999999819,
   "save_name": "yh",
-  "total_deaths": 1,
-  "total_coins": 61,
-  "total_damage_dealt": 900,
-  "total_damage_taken": 6,
-  "total_levels_cleared": 2,
-  "total_secrets": 0,
-  "total_chests": 17,
+  "total_deaths": 6,
+  "total_coins": 326,
+  "total_damage_dealt": 1675,
+  "total_damage_taken": 34,
+  "total_levels_cleared": 3,
+  "total_secrets": 1,
+  "total_chests": 30,
   "total_boss_rush_waves": 0,
   "highest_combo": 3,
   "total_shots_fired": 0,

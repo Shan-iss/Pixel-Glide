@@ -6002,6 +6002,30 @@ def normalize_respawn_spot(wx,wy):
         return 120.0,480.0
     return max(0,min(WORLD_W-Player.WIDTH,wx)),max(18,min(SCREEN_H-Player.HEIGHT-4,wy))
 
+
+def filter_generated_rewards_before_checkpoint(boundary_wx):
+    global coins,chests,powerups,keycard_pickups,hidden_room_entrances
+    try:
+        boundary_wx=float(boundary_wx)
+    except (TypeError,ValueError):
+        return
+    if boundary_wx<=120.0:
+        return
+    coins[:]=[c for c in coins if getattr(c,"wx",0)>=boundary_wx]
+    chests[:]=[c for c in chests if getattr(c,"wx",0)>=boundary_wx]
+    powerups[:]=[p for p in powerups if getattr(p,"wx",0)>=boundary_wx]
+    keycard_pickups[:]=[k for k in keycard_pickups if getattr(k,"wx",0)>=boundary_wx]
+    for fz in fly_zones:
+        if hasattr(fz,"coins"):
+            fz.coins=[c for c in fz.coins if getattr(c,"wx",0)>=boundary_wx]
+    rooms=dict(save_data.get("hidden_rooms",{}))
+    for hr in hidden_room_entrances:
+        if getattr(hr,"wx",0)<boundary_wx:
+            rooms[hr.room_id]=True
+    if rooms:
+        save_data["hidden_rooms"]=rooms
+    hidden_room_entrances[:]=[hr for hr in hidden_room_entrances if getattr(hr,"wx",0)>=boundary_wx]
+
 def save_progress_state(sd=None,include_session_kills=True):
     global session_kills,current_save_file,session_stats
     if not current_save_file: return False
@@ -7245,7 +7269,7 @@ def _load_game_state(sd):
     combo_count=0
     combo_timer=0
 
-    platforms,enemies,boss_x_world,chests,moving_plats,spike_traps,tunnels,fly_zones,facility_sections,water_zones,coins,active_boss_data=generate_world(level,sd.get("world_seed"))
+    platforms,enemies,boss_x_world,chests,moving_plats,spike_traps,tunnels,fly_zones,facility_sections,water_zones,coins,active_boss_data=generate_world(level)
     build_checkpoints()
     start_level_mission(level)
     reset_level_stats()
@@ -7258,6 +7282,7 @@ def _load_game_state(sd):
     reconcile_current_mission_progress()
 
     respawn_wx,respawn_wy=normalize_respawn_spot(sd.get("respawn_x",120.0),sd.get("respawn_y",480.0))
+    filter_generated_rewards_before_checkpoint(respawn_wx)
     player.wx=respawn_wx
     player.wy=respawn_wy
     current_checkpoint=None
