@@ -1,0 +1,199 @@
+{
+  "high_score": 221596,
+  "best_level": 13,
+  "total_plays": 5,
+  "total_kills": 37920,
+  "bosses_defeated": 13,
+  "last_level": 13,
+  "last_checkpoint": 13,
+  "has_save": true,
+  "money": 15,
+  "shop_upgrades": {
+    "hp": 5,
+    "speed": 0,
+    "damage": 1,
+    "jump": 0,
+    "dash": 0,
+    "shield": 0,
+    "weaponmod": 0
+  },
+  "tutorial_seen": false,
+  "achievements": [
+    "boss_hunter",
+    "elite_hunter",
+    "explorer",
+    "first_blood",
+    "laboratory_survivor",
+    "master_hacker",
+    "rich_robot",
+    "secret_finder",
+    "story_collector",
+    "terminal_hacker",
+    "weapon_master"
+  ],
+  "completed_challenges": [
+    "L10:0:storm_elevator",
+    "L11:0:server_lockdown",
+    "L12:0:glitch_room",
+    "L13:0:corex_trial",
+    "L1:0:security_gate",
+    "L2:0:heat_elevator",
+    "L3:0:laser_room",
+    "L4:0:zero_gravity_corridor",
+    "L5:0:glitch_room",
+    "L6:0:frozen_corridor",
+    "L7:0:server_lockdown",
+    "L8:0:storm_elevator",
+    "L9:0:reactor_core_room"
+  ],
+  "lives": 1,
+  "hp": 3,
+  "max_hp": 10,
+  "current_weapon": "laser",
+  "weapon_levels": {},
+  "mission_progress": {
+    "kind": "ai_core",
+    "title": "Destroy AI Core",
+    "target": 1,
+    "progress": 1,
+    "complete": true,
+    "timer": 0,
+    "rewarded": false
+  },
+  "respawn_x": 31950.0,
+  "respawn_y": 524.0,
+  "timestamp": "2026-07-31T03:27:26.039450",
+  "play_time": 79028.79999998279,
+  "settings": {
+    "vol_sfx": 0.55,
+    "vol_bgm": 0.22,
+    "mute": false,
+    "fullscreen": false,
+    "language": "en",
+    "difficulty": "normal"
+  },
+  "cosmetics": {
+    "owned_skins": [
+      "classic",
+      "shadow"
+    ],
+    "equipped_skin": "shadow",
+    "owned_weapon_skins": [
+      "crimson",
+      "default",
+      "gold",
+      "neon",
+      "void"
+    ],
+    "equipped_weapon_skin": "default",
+    "owned_shop_weapons": [
+      "nova",
+      "pulse",
+      "railgun"
+    ],
+    "owned_pets": [
+      "repair_bot"
+    ],
+    "equipped_pet": "repair_bot"
+  },
+  "save_name": "me",
+  "shake_intensity": 0.7,
+  "particle_density": true,
+  "world_seed": 8245968064193554674,
+  "total_deaths": 34,
+  "total_coins": 3711,
+  "total_damage_dealt": 12675,
+  "total_damage_taken": 401,
+  "total_levels_cleared": 12,
+  "total_secrets": 13,
+  "total_chests": 209,
+  "total_boss_rush_waves": 0,
+  "highest_combo": 5,
+  "total_shots_fired": 0,
+  "keycards": [
+    "Maintenance Keycard",
+    "Master Key",
+    "Security Keycard"
+  ],
+  "story_logs": [
+    "log_01",
+    "log_02",
+    "log_03",
+    "log_04",
+    "log_05",
+    "log_06",
+    "log_07",
+    "log_08",
+    "log_09",
+    "log_10",
+    "log_11"
+  ],
+  "terminal_states": {
+    "boss_gate_1": [
+      "unlock_boss_area"
+    ],
+    "lvl02_laser": [
+      "read_research_log"
+    ],
+    "boss_gate_2": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_3": [
+      "unlock_boss_area"
+    ],
+    "lvl04_reactor": [
+      "disable_laser",
+      "read_research_log"
+    ],
+    "boss_gate_4": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_5": [
+      "unlock_boss_area"
+    ],
+    "lvl06_gate": [
+      "read_research_log",
+      "unlock_security_door"
+    ],
+    "boss_gate_6": [
+      "unlock_boss_area"
+    ],
+    "lvl07_lift": [
+      "read_research_log",
+      "unlock_ventilation"
+    ],
+    "boss_gate_7": [
+      "unlock_boss_area"
+    ],
+    "lvl08_log": [
+      "read_research_log"
+    ],
+    "boss_gate_8": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_9": [
+      "unlock_boss_area"
+    ],
+    "lvl10_master": [
+      "read_research_log"
+    ],
+    "boss_gate_10": [
+      "unlock_boss_area"
+    ],
+    "lvl11_core": [
+      "read_research_log"
+    ],
+    "boss_gate_11": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_12": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_13": [
+      "unlock_boss_area"
+    ]
+  },
+  "hidden_rooms": {
+    "lab_09": true
+  }
+}

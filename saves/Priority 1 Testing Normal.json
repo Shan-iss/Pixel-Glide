@@ -1,0 +1,109 @@
+{
+  "high_score": 32332,
+  "best_level": 3,
+  "total_plays": 6,
+  "total_kills": 428,
+  "bosses_defeated": 2,
+  "last_level": 3,
+  "last_checkpoint": 3,
+  "has_save": true,
+  "money": 546,
+  "shop_upgrades": {
+    "hp": 1,
+    "speed": 0,
+    "damage": 0,
+    "jump": 0,
+    "dash": 0,
+    "shield": 0,
+    "weaponmod": 0
+  },
+  "tutorial_seen": false,
+  "achievements": [
+    "first_blood",
+    "rich_robot",
+    "secret_finder",
+    "terminal_hacker",
+    "weapon_master"
+  ],
+  "completed_challenges": [
+    "L1:0:security_gate",
+    "L2:0:heat_elevator",
+    "L3:0:laser_room"
+  ],
+  "lives": 5,
+  "hp": 6,
+  "max_hp": 6,
+  "current_weapon": "laser",
+  "weapon_levels": {},
+  "mission_progress": {
+    "kind": "keycard",
+    "title": "Obtain Maintenance Keycard",
+    "target": 1,
+    "progress": 1,
+    "complete": true,
+    "timer": 0,
+    "rewarded": false
+  },
+  "respawn_x": 16250.0,
+  "respawn_y": 524.55,
+  "keycards": [
+    "Maintenance Keycard"
+  ],
+  "story_logs": [
+    "log_01",
+    "log_02",
+    "log_03",
+    "log_04"
+  ],
+  "terminal_states": {
+    "boss_gate_1": [
+      "unlock_boss_area"
+    ],
+    "lvl02_laser": [
+      "disable_laser",
+      "read_research_log"
+    ],
+    "boss_gate_2": [
+      "unlock_boss_area"
+    ],
+    "boss_gate_3": [
+      "unlock_boss_area"
+    ]
+  },
+  "hidden_rooms": {},
+  "timestamp": "2026-08-01T22:46:38.227158",
+  "play_time": 1405.0499999999843,
+  "save_name": "Priority 1 Testing Normal",
+  "total_deaths": 0,
+  "total_coins": 576,
+  "total_damage_dealt": 2000,
+  "total_damage_taken": 20,
+  "total_levels_cleared": 2,
+  "total_secrets": 3,
+  "total_chests": 40,
+  "total_boss_rush_waves": 0,
+  "highest_combo": 3,
+  "total_shots_fired": 0,
+  "settings": {
+    "vol_sfx": 0.55,
+    "vol_bgm": 0.22,
+    "mute": false,
+    "fullscreen": false,
+    "language": "id",
+    "difficulty": "normal"
+  },
+  "cosmetics": {
+    "owned_skins": [
+      "classic"
+    ],
+    "equipped_skin": "classic",
+    "owned_weapon_skins": [
+      "default"
+    ],
+    "equipped_weapon_skin": "default",
+    "owned_shop_weapons": [],
+    "owned_pets": [],
+    "equipped_pet": ""
+  },
+  "world_seed": 8081707186361162053
+}

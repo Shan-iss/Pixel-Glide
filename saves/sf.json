@@ -1,0 +1,97 @@
+{
+  "high_score": 95122,
+  "best_level": 10,
+  "total_plays": 64,
+  "total_kills": 2251861926112382,
+  "bosses_defeated": 9,
+  "last_level": 10,
+  "last_checkpoint": 10,
+  "has_save": true,
+  "money": 150,
+  "shop_upgrades": {
+    "hp": 5,
+    "speed": 0,
+    "damage": 1,
+    "jump": 0,
+    "dash": 0,
+    "shield": 3,
+    "weaponmod": 0
+  },
+  "tutorial_seen": true,
+  "achievements": [
+    "boss_hunter",
+    "first_blood",
+    "rich_robot",
+    "secret_finder",
+    "weapon_master"
+  ],
+  "completed_challenges": [
+    "L1:0:security_gate",
+    "L2:0:heat_elevator",
+    "L3:0:laser_room",
+    "L5:0:glitch_room",
+    "L6:0:frozen_corridor",
+    "L7:0:server_lockdown",
+    "L8:0:storm_elevator",
+    "L9:0:reactor_core_room"
+  ],
+  "lives": 1,
+  "hp": 10,
+  "max_hp": 10,
+  "current_weapon": "laser",
+  "weapon_levels": {},
+  "mission_progress": {
+    "kind": "coins",
+    "target": 42,
+    "progress": 0,
+    "complete": false,
+    "timer": 0,
+    "rewarded": false
+  },
+  "respawn_x": 120.0,
+  "respawn_y": 480.0,
+  "timestamp": "2026-07-30T03:28:16.313258",
+  "play_time": 9274.183333333456,
+  "settings": {
+    "vol_sfx": 0.55,
+    "vol_bgm": 0.22,
+    "mute": false,
+    "fullscreen": false,
+    "language": "id",
+    "difficulty": "normal"
+  },
+  "cosmetics": {
+    "owned_skins": [
+      "classic"
+    ],
+    "equipped_skin": "classic",
+    "owned_weapon_skins": [
+      "crimson",
+      "default",
+      "gold",
+      "neon",
+      "void"
+    ],
+    "equipped_weapon_skin": "default",
+    "owned_shop_weapons": [
+      "nova",
+      "railgun"
+    ],
+    "owned_pets": [],
+    "equipped_pet": ""
+  },
+  "save_name": "sf",
+  "shake_intensity": 0.7,
+  "particle_density": true,
+  "world_seed": 8552092661791276726,
+  "total_deaths": 11,
+  "total_coins": 2042,
+  "total_damage_dealt": 6700,
+  "total_damage_taken": 160,
+  "total_levels_cleared": 9,
+  "total_secrets": 3,
+  "total_chests": 102,
+  "total_boss_rush_waves": 0,
+  "highest_combo": 3,
+  "total_shots_fired": 0
+}
