@@ -1,13 +1,13 @@
 {
   "high_score": 32332,
   "best_level": 3,
-  "total_plays": 6,
-  "total_kills": 428,
+  "total_plays": 7,
+  "total_kills": 856,
   "bosses_defeated": 2,
   "last_level": 3,
   "last_checkpoint": 3,
   "has_save": true,
-  "money": 546,
+  "money": 559,
   "shop_upgrades": {
     "hp": 1,
     "speed": 0,
@@ -71,7 +71,7 @@
     ]
   },
   "hidden_rooms": {},
-  "timestamp": "2026-08-01T22:46:38.227158",
+  "timestamp": "2026-08-01T23:09:18.755777",
   "play_time": 1405.0499999999843,
   "save_name": "Priority 1 Testing Normal",
   "total_deaths": 0,
@@ -87,7 +87,7 @@
   "settings": {
     "vol_sfx": 0.55,
     "vol_bgm": 0.22,
-    "mute": false,
+    "mute": true,
     "fullscreen": false,
     "language": "id",
     "difficulty": "normal"

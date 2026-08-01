@@ -1518,6 +1518,8 @@ class Terminal:
             self.open = False
             global terminal_active
             terminal_active = False
+            global terminal_ui_active
+            terminal_ui_active = False
             global active_terminal
             active_terminal = None
 
@@ -4037,7 +4039,7 @@ def mission_label():
     if not mission_state:
         return ""
 
-    done = " ✅" if mission_state.get("complete") else ""
+    done = " ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦" if mission_state.get("complete") else ""
 
     title = mission_state.get("title", "Mission")
 
@@ -4045,7 +4047,7 @@ def mission_label():
     target = mission_state.get("target", 1)
 
     return (
-    f"🧭 MISSION\n"
+    f"ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ MISSION\n"
     f"{title}\n"
     f"{progress} / {target}{done}"
 )
@@ -4115,6 +4117,7 @@ def add_mission_progress(kind, amount=1):
             SUCCESS_TEXT,
             180
         )
+        sounds.play("level_clear")
 
 def register_kill(base_score,wx,wy,elite_bonus=0):
     global score,multiplier,mult_timer,combo_count,combo_timer,session_kills,level_best_combo,powerups
@@ -5162,7 +5165,7 @@ class SettingsScreen:
         ly2=py+176; lang_col=CYAN if self.tog["language"]=="id" else (120,190,255)
         pygame.draw.rect(surface,(18,22,40),(rx,ly2,cw,30),border_radius=6)
         pygame.draw.rect(surface,lang_col,(rx,ly2,cw,30),border_radius=6,width=2)
-        ltxt=font_sm.render(f"{tr('lang.name')}  {'▾' if current_language()=='en' else '▾'}",True,lang_col)
+        ltxt=font_sm.render(f"{tr('lang.name')}  {'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾' if current_language()=='en' else 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾'}",True,lang_col)
         surface.blit(ltxt,(rx+14,ly2+6))
         lhint=font_xs.render(tr("settings.language"),True,(60,70,80))
         surface.blit(lhint,(rx+cw-lhint.get_width()-12,ly2+8))
@@ -6861,9 +6864,19 @@ def start_level_intro(level_num, start_tutorial=False):
     story_intro.start(level_num)
 
 def blocking_overlay_active():
-    return (shop.active or settings_screen.active or codex_screen.active or
-            achievement_screen.active or stats_screen.active or difficulty_screen.active or
-            terminal_ui_active or research_log_active or tutorial.active or boss_dialogue.active or boss_intro.active)
+    return (
+        shop.active
+        or settings_screen.active
+        or codex_screen.active
+        or achievement_screen.active
+        or stats_screen.active
+        or difficulty_screen.active
+        or terminal_ui_active
+        or research_log_active
+        or tutorial.active
+        or boss_dialogue.active
+        or boss_intro.active
+    )
 
 def sync_adventure_progress_from_save(player_obj):
     player_obj.keycards=set(save_data.get("keycards",[]))
@@ -6975,8 +6988,8 @@ def open_terminal_interface(term):
 
 
 def close_terminal_interface():
-    global terminal_ui_active,active_terminal,terminal_ui_message
-    terminal_ui_active=False; active_terminal=None; terminal_ui_message=""
+    global terminal_ui_active,active_terminal,terminal_ui_message,terminal_processing_action,terminal_processing_timer,research_log_active,research_log_key
+    terminal_ui_active=False; active_terminal=None; terminal_ui_message=""; terminal_processing_action=None; terminal_processing_timer=0; research_log_active=False; research_log_key=""
 
 
 def handle_player_interaction():
@@ -8470,7 +8483,7 @@ while running:
                             spawn_pixels(ch.wx,ch.wy,(127,119,221),20)
                 chests=[ch for ch in chests if ch.alive]
 
-                if mission_state.get("complete") and is_boss_area_unlocked() and not boss_spawned and boss is None and player.wx>boss_x_world-720:
+                if mission_state.get("complete") and mission_state.get("timer",0)<=0 and is_boss_area_unlocked() and not boss_spawned and boss is None and player.wx>boss_x_world-720:
                     boss_spawned=True; waiting_for_dialogue=True
                     boss_id=active_boss_data.get("base_id",get_boss_id(level))
                     boss=Boss(boss_id,boss_x_world,active_boss_data,level)
@@ -8628,52 +8641,52 @@ while running:
                     sounds.stop_bgm()
                     toast(tr("level.clear.done", level=level, bonus=1000 * level), "\u2B50", GOLD, 180)
 
-                if level_clear:
-                    level_clear_timer -= 1
-                    if level_clear_timer <= 0:
-                        if level >= len(LEVEL_ORDER):
-                            score += 1000 * level
-                            finish_game()
-                        level += 1
-                        checkpoint = level
-                        score += 1000 * level
-                        p_bullets = []
-                        e_bullets = []
-                        pixels = []
-                        boss = None
-                        boss_spawned = False
-                        coins = []
-                        powerups = []
-                        active_powerups = {}
-                        combo_count = 0
-                        combo_timer = 0
-                        platforms, enemies, boss_x_world, chests, moving_plats, spike_traps, tunnels, fly_zones, facility_sections, water_zones, coins, active_boss_data = generate_world(level, save_data.get("world_seed"))
-                        build_checkpoints()
-                        start_level_mission(level)
-                        reconcile_current_mission_progress()
-                        reset_level_stats()
-                        reset_environment_event()
-                        camera = Camera()
+    if level_clear:
+        level_clear_timer -= 1
+        if level_clear_timer <= 0:
+            if level >= len(LEVEL_ORDER):
+                score += 1000 * level
+                finish_game()
+            level += 1
+            checkpoint = level
+            score += 1000 * level
+            p_bullets = []
+            e_bullets = []
+            pixels = []
+            boss = None
+            boss_spawned = False
+            coins = []
+            powerups = []
+            active_powerups = {}
+            combo_count = 0
+            combo_timer = 0
+            platforms, enemies, boss_x_world, chests, moving_plats, spike_traps, tunnels, fly_zones, facility_sections, water_zones, coins, active_boss_data = generate_world(level, save_data.get("world_seed"))
+            build_checkpoints()
+            start_level_mission(level)
+            reconcile_current_mission_progress()
+            reset_level_stats()
+            reset_environment_event()
+            camera = Camera()
 
-                        player.reset()
-                        print("[1] AFTER RESET:", player.wx, player.wy)
+            player.reset()
+            print("[1] AFTER RESET:", player.wx, player.wy)
 
-                        apply_permanent_unlocks(player)
-                        apply_shop_upgrades(player)
+            apply_permanent_unlocks(player)
+            apply_shop_upgrades(player)
 
-                        respawn_wx = player.wx
-                        respawn_wy = player.wy
-                        current_checkpoint = None
-                        save_progress_state()
+            respawn_wx = player.wx
+            respawn_wy = player.wy
+            current_checkpoint = None
+            save_progress_state()
 
-                    level_clear = False
-                    start_level_intro(level)
-                    print("[2] AFTER INTRO:", player.wx, player.wy)
+            level_clear = False
+            start_level_intro(level)
+            print("[2] AFTER INTRO:", player.wx, player.wy)
 
-                    screen_fade = 255
-                    screen_fade_dir = -1
-                    screen_fade = 255
-                    screen_fade_dir = -1
+            screen_fade = 255
+            screen_fade_dir = -1
+            screen_fade = 255
+            screen_fade_dir = -1
 
     # -- BGM auto-switch ------------------------
     if scene == "menu":
@@ -8717,7 +8730,7 @@ while running:
         if overlays_blocking:
             screen.fill(DARK_BLUE)
             starfield.draw(screen,0)
-            print(f"[DRAW] overlays_blocking=True → starfield only")
+            print(f"[DRAW] overlays_blocking=True ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ starfield only")
         elif scene=="menu":
             print(f"[DRAW] menu scene={scene} overlays_blocking={overlays_blocking}")
             screen.fill(DARK_BLUE)
@@ -8869,7 +8882,7 @@ while running:
             draw_text(screen,"PILIH DIFFICULTY",font_lg,CX,py+22,CYAN,center=True)
             pygame.draw.line(screen,PANEL_BORDER,(px+35,py+54),(px+pw-35,py+54),1)
             df_rects={}
-            card_data=[("easy","Easy",CYAN,"More HP  •  More Coins  •  Easier enemies"),("normal","Normal",BLUE,"Standard gameplay experience"),("hard","Hard",ORANGE,"Stronger enemies  •  Faster enemies"),("nightmare","Nightmare",RED,"Elite enemies  •  Hard bosses  •  More hazards")]
+            card_data=[("easy","Easy",CYAN,"More HP  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  More Coins  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Easier enemies"),("normal","Normal",BLUE,"Standard gameplay experience"),("hard","Hard",ORANGE,"Stronger enemies  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Faster enemies"),("nightmare","Nightmare",RED,"Elite enemies  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Hard bosses  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  More hazards")]
             for i,(key,label,col,desc) in enumerate(card_data):
                 cy=py+70+i*82; cr=pygame.Rect(px+30,cy,pw-60,74); df_rects[key]=cr; active=key==selected_difficulty
                 if active:
@@ -8881,7 +8894,7 @@ while running:
                 pygame.draw.rect(screen,(20,24,38),cr,border_radius=6)
                 pygame.draw.rect(screen,col if active else (40,45,62),cr,border_radius=6,width=2 if active else 1)
                 if active:
-                    tri=font_sm.render("▶",True,col)
+                    tri=font_sm.render("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶",True,col)
                     screen.blit(tri,(cr.x+12,cr.y+10))
                     nx=cr.x+34
                 else:
@@ -8892,7 +8905,7 @@ while running:
             bw,bh=130,30; bg=16; tw=bw*2+bg; bx=CX-tw//2; by=py+ph-50
             back_r=pygame.Rect(bx,by,bw,bh); lanjut_r=pygame.Rect(bx+bw+bg,by,bw,bh)
             save_screen_data["df_back_btn"]=back_r; save_screen_data["df_lanjut_btn"]=lanjut_r
-            for br,btxt,bcol in[(back_r,"KEMBALI",RED),(lanjut_r,"LANJUT  ▶",CYAN)]:
+            for br,btxt,bcol in[(back_r,"KEMBALI",RED),(lanjut_r,"LANJUT  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶",CYAN)]:
                 hv=br.collidepoint(mx,my)
                 hr=br.inflate(4*hv,4*hv)
                 bs=pygame.Surface((hr.w,hr.h),pygame.SRCALPHA); bs.fill((*bcol,35+25*hv))
