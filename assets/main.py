@@ -677,15 +677,18 @@ def new_level_rng(level_num, base_seed=None):
     return random.Random(seed+level_num*1000003), seed
 
 def select_random_boss_data(level_num,rng):
+    if is_final_boss_level(level_num):
+        data=dict(BOSS_DATA[10]); data["base_id"]=10
+        return localize_boss_data(data)
     cap=max(1,min(10,level_num+2))
-    if level_num>=len(LEVEL_ORDER): cap=10
+    if is_final_boss_level(level_num): cap=10
     boss_id=rng.randint(1,cap)
     data=dict(BOSS_DATA[boss_id])
     if level_num<=2:
         ability_pool=["triple_shot","ground_slam","burst_fire"]
     elif level_num<=5:
         ability_pool=["triple_shot","ground_slam","burst_fire","dive_bomb","code_storm","freeze_wave"]
-    elif level_num<len(LEVEL_ORDER):
+    elif not is_final_boss_level(level_num):
         ability_pool=["triple_shot","ground_slam","burst_fire","dive_bomb","giant_stomp","code_storm","teleport","freeze_wave","lightning","multi_phase"]
     else:
         ability_pool=list(BOSS_ABILITY_DESCS.keys())
@@ -877,6 +880,12 @@ LEVEL_TEXT_EN = {
 
 LEVEL_ORDER = [1,2,3,4,"bonus1",5,6,"bonus2",7,8,9,"bonus3",10]
 
+def is_final_boss_level(level_num):
+    return level_num>=len(LEVEL_ORDER)
+
+def final_boss_mission_definition():
+    return {"kind":"ai_core","target":1,"title":"Destroy CORE-X"}
+
 FIXED_LEVEL_MISSIONS = {
     1: {"kind":"kills","target":8,"title":"Eliminate Rogue Robots"},
     2: {"kind":"cells","target":18,"title":"Collect Energy Cells"},
@@ -890,10 +899,18 @@ FIXED_LEVEL_MISSIONS = {
     10:{"kind":"masterkey","target":1,"title":"Obtain Master Key"},
     11:{"kind":"ai_core","target":1,"title":"Destroy AI Core"},
     12:{"kind":"cells","target":35,"title":"Stabilize Void Anomaly"},
-    13:{"kind":"ai_core","target":1,"title":"Destroy AI Core"},
+    13:{"kind":"ai_core","target":1,"title":"Destroy CORE-X"},
 }
 
 LEVEL_MISSIONS = FIXED_LEVEL_MISSIONS
+
+def mission_definition_for_level(level_num):
+    if is_final_boss_level(level_num):
+        return final_boss_mission_definition()
+    return LEVEL_MISSIONS.get(
+        level_num,
+        {"kind":"kills","target":10,"title":"Complete Mission"}
+    )
 
 STORY_DATABASE = {
     "log_01":{"title":"Awakening Protocol","body":"G7 rebooted after CORE-X seized station robotics."},
@@ -944,11 +961,68 @@ def unlock_story_log(log_key):
 
 TERMINAL_ACTIONS = {
     "disable_laser":{"label":"Disable Laser","mission":"terminal_reactor","log":"log_04"},
+    "restore_power":{"label":"Restore Power","mission":None,"log":"log_04"},
+    "unlock_lab_door":{"label":"Unlock Laboratory Door","mission":None,"log":"log_08"},
+    "activate_flight_zone":{"label":"Activate Flight Zone","mission":None,"log":"log_08"},
+    "unlock_security_vault":{"label":"Unlock Security Vault","mission":None,"required":"Security Keycard","log":"log_06"},
     "unlock_security_door":{"label":"Unlock Security Door","mission":"terminal_gate","required":"Security Keycard","log":"log_06"},
     "unlock_ventilation":{"label":"Unlock Ventilation","mission":"terminal_lift","required":"Maintenance Keycard","log":"log_07"},
+    "disable_security_grid":{"label":"Disable Security Grid","mission":None,"required":"Maintenance Keycard","log":"log_08"},
+    "activate_bridge":{"label":"Activate Bridge","mission":None,"required":"Maintenance Keycard","log":"log_09"},
+    "unlock_reactor_core":{"label":"Unlock Reactor Core","mission":None,"required":"Master Key","log":"log_10"},
     "read_research_log":{"label":"Read Research Log","mission":"hidden_lab","log":"log_08"},
     "unlock_boss_area":{"label":"Unlock Boss Area","mission":None,"log":None},
 }
+
+def terminal_action_completed(action_name,terminal_id=None):
+    states=save_data.get("terminal_states",{})
+    if terminal_id:
+        actions=states.get(terminal_id,[])
+        return isinstance(actions,list) and action_name in actions
+    return any(action_name in actions for actions in states.values() if isinstance(actions,list))
+
+def lasers_disabled_for_level(level_num):
+    return terminal_action_completed("disable_laser",f"lvl{level_num:02d}_laser") or terminal_action_completed("disable_laser",f"lvl{level_num:02d}_reactor")
+
+terminal_warning_flash=0
+terminal_warning_cooldowns={}
+
+def trigger_terminal_warning(key,message,extra=None,consequence=None,cooldown=70):
+    global terminal_warning_flash
+    now=pygame.time.get_ticks()
+    last=terminal_warning_cooldowns.get(key,0)
+    if now-last<cooldown*16: return False
+    terminal_warning_cooldowns[key]=now
+    terminal_warning_flash=18
+    sounds.play("player_hit",0.75)
+    text=message if not extra else f"{message}\n{extra}"
+    toast(text,"WARNING",RED,135)
+    if callable(consequence): consequence=consequence()
+    if consequence: toast(consequence,"WARNING",ORANGE,150)
+    return True
+
+def terminal_warning_for_action(action,door_id=""):
+    if action=="disable_laser": return "LASER SECURITY ACTIVE"
+    if action=="restore_power": return "POWER SYSTEM OFFLINE"
+    if action=="unlock_lab_door": return "LAB ACCESS DENIED"
+    if action=="activate_flight_zone": return "FLIGHT SYSTEM OFFLINE"
+    if action=="unlock_security_vault": return "SECURITY VAULT LOCKED"
+    if action=="unlock_security_door": return "MAIN GATE LOCKED"
+    if action=="unlock_ventilation": return "MAIN LIFT OFFLINE"
+    if action=="disable_security_grid": return "SECURITY GRID ACTIVE"
+    if action=="activate_bridge": return "BRIDGE OFFLINE"
+    if action=="unlock_reactor_core": return "REACTOR ACCESS DENIED"
+    if action=="unlock_boss_area": return "MAIN GATE LOCKED" if "boss" in door_id else "ACCESS LOCKED"
+    return "TERMINAL REQUIRED"
+
+def apply_flight_zone_offline_consequence():
+    hard_mode=current_difficulty() in ("hard","nightmare")
+    player.wx=max(0,min(WORLD_W-player.WIDTH,120.0 if hard_mode else respawn_wx))
+    player.wy=max(18,min(SCREEN_H-player.HEIGHT-4,480.0 if hard_mode else respawn_wy))
+    player.vx=0; player.vy=0; player.fly_mode=False; player.fly_buffer=0
+    if hard_mode:
+        player.hp=max(1,player.hp-1)
+    return "Returning to level start\nHP -1" if hard_mode else "Returning to checkpoint"
 
 def get_level_key(n):
     if n<=0: return 1
@@ -1318,8 +1392,9 @@ class FlyZone:
     def __init__(self,wx,width,level_num,rng=None):
         # Wider activation area + grace margins reduce Level 11 fly-mode dropouts.
         self.wx=wx; self.width=width; self.level=level_num; self.entry_margin=160 if level_num==11 else 96; self.exit_margin=260 if level_num==11 else 160
+        self.required_action=None; self.required_terminal_id=None
         self.rng=rng or random.Random()
-        self.obstacles=[]; self.mov_obs=[]; self.coins=[]
+        self.obstacles=[]; self.mov_obs=[]; self.coins=[]; self.explosions=[]
         difficulty=max(0,level_num-3)
         gap_h=max(150,230-difficulty*6); spacing=max(250,380-difficulty*9)
         ox=wx+250
@@ -1342,17 +1417,25 @@ class FlyZone:
                     "size":self.rng.randint(16,24)})
 
     def contains(self,wx,margin=0):
+        if not self.enabled(): return False
         margin=max(margin,self.entry_margin)
         return self.wx-margin<=wx<=self.wx+self.width+margin
     def contains_for_mode(self,wx,active=False):
-        """Use a larger margin while already flying so fly_mode cannot instantly turn off."""
-        margin=self.exit_margin if active else self.entry_margin
+        """Use exact bounds while flying so exiting a fly zone returns to run mode immediately."""
+        if not self.enabled(): return False
+        margin=0 if active else self.entry_margin
         return self.wx-margin<=wx<=self.wx+self.width+margin
+    def enabled(self):
+        if not self.required_action: return True
+        return terminal_action_completed(self.required_action,self.required_terminal_id)
     def update(self,pwx,pwy,bullets):
         for mo in self.mov_obs:
             mo["t"]+=0.025*mo["speed"]
             if mo["axis"]=="v": mo["wy"]=mo["oy"]+math.sin(mo["t"])*mo["range"]
             else: mo["wx"]=mo["ox"]+math.sin(mo["t"])*mo["range"]
+        for ex in self.explosions:
+            ex["t"]+=1
+        self.explosions=[ex for ex in self.explosions if ex["t"]<18]
     def collect_coins(self,player_rect):
         collected=[]
         for c in self.coins:
@@ -1362,12 +1445,20 @@ class FlyZone:
         return collected
     def draw_bg(self,surface,cam,t):
         sx=int(cam.apply(self.wx,0)[0]); sw=int(self.width)
+        if not self.enabled():
+            if -sw<sx<SCREEN_W+sw:
+                fnt=make_font(11,"hud",True)
+                for x in (sx,int(sx+sw)):
+                    if -20<x<SCREEN_W+20: pygame.draw.line(surface,(40,70,90),(x,90),(x,SCREEN_H-70),2)
+                if 0<sx<SCREEN_W:
+                    label=fnt.render("FLIGHT ZONE OFF",True,(80,120,140)); surface.blit(label,(sx+8,SCREEN_H//2-8))
+            return
         vis_x=max(0,sx); vis_w=min(SCREEN_W,sx+sw)-vis_x
         if vis_w>0:
-            bg=get_cached_surface(f"flyzone_bg_{vis_w}",vis_w,SCREEN_H)
+            bg=get_cached_surface("flyzone_bg",SCREEN_W,SCREEN_H)
             bg.fill((0,0,0,0))
             for y in range(0,SCREEN_H,2):
-                pygame.draw.line(bg,(15,35,70,int(35+15*math.sin(y*0.015+t*0.001))),(0,y),(vis_w,y))
+                pygame.draw.line(bg,(15,35,70,int(35+15*math.sin(y*0.015+t*0.001))),(0,y),(SCREEN_W,y))
             surface.blit(bg,(vis_x,0))
         fnt=make_font(11,"hud",True)
         if 0<sx<SCREEN_W:
@@ -1380,6 +1471,7 @@ class FlyZone:
             pygame.draw.line(surface,ORANGE,(ex,0),(ex,SCREEN_H),2)
             surface.blit(fnt.render("RUN",True,ORANGE),(ex-40,SCREEN_H//2-6))
     def draw_obstacles(self,surface,cam,t):
+        if not self.enabled(): return
         for obs in self.obstacles:
             sx=int(cam.apply(obs["wx"],0)[0])
             if not(-obs["w"]-10<sx<SCREEN_W+10): continue
@@ -1400,6 +1492,15 @@ class FlyZone:
             pygame.draw.circle(surface,(75,65,55),(ix2,iy2),sz)
             pygame.draw.circle(surface,(95,85,75),(ix2-sz//4,iy2-sz//4),sz//3)
             pygame.draw.circle(surface,(110,100,90),(ix2,iy2),sz,1)
+        for ex in self.explosions:
+            sx3,sy3=cam.apply(ex["x"],ex["y"])
+            if not(-90<sx3<SCREEN_W+90): continue
+            pulse=ex["t"]/18.0; radius=int(10+34*pulse)
+            fx=pygame.Surface((radius*2+8,radius*2+8),pygame.SRCALPHA)
+            alpha=max(0,180-int(160*pulse))
+            pygame.draw.circle(fx,(255,160,40,alpha),(radius+4,radius+4),radius)
+            pygame.draw.circle(fx,(255,230,120,max(0,alpha-40)),(radius+4,radius+4),max(3,radius//3),2)
+            surface.blit(fx,(int(sx3)-radius-4,int(sy3)-radius-4))
         for c in self.coins: c.draw(surface,cam)
     def get_collision_rects(self):
         rects=[]
@@ -1410,6 +1511,15 @@ class FlyZone:
         for mo in self.mov_obs:
             sz=max(6,mo["size"]-5); rects.append(("asteroid",pygame.Rect(mo["wx"]-sz,mo["wy"]-sz,sz*2,sz*2)))
         return rects
+    def trigger_orb_explosion(self,mo,player_obj):
+        mo["dead"]=True
+        self.explosions.append({"x":mo["wx"],"y":mo["wy"],"t":0})
+        sounds.play("boss_death",0.35)
+        shake.trigger(7,14)
+        spawn_pixels(int(mo["wx"]),int(mo["wy"]),ORANGE,22)
+        spawn_pixels(int(mo["wx"]),int(mo["wy"]),(180,110,50),18)
+        dmg=max(1,math.ceil(player_obj.MAX_HP*0.5))
+        return player_obj.take_damage(dmg)
 
 # ------------------------------------------------------------------------------------
 # CHEST
@@ -1444,6 +1554,7 @@ class KeycardPickup:
     def __init__(self,wx,wy,keycard_type):
         self.wx=float(wx); self.wy=float(wy); self.keycard_type=keycard_type; self.alive=True; self.anim_t=random.randint(0,999)
     def get_rect(self): return pygame.Rect(self.wx,self.wy,self.W,self.H)
+    def interact_rect(self): return self.get_rect().inflate(54,34)
     def draw(self,surface,cam):
         sx,sy=cam.apply(self.wx,self.wy)
         if not(-30<sx<SCREEN_W+30): return
@@ -1453,6 +1564,9 @@ class KeycardPickup:
         pygame.draw.rect(surface,col,r,border_radius=3,width=2)
         pygame.draw.rect(surface,col,(r.x+4,r.y+4,7,3),border_radius=1)
         tag=make_font(8,"hud",True).render("KEY",True,col); surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-11))
+        if "player" in globals() and self.interact_rect().colliderect(player.get_rect()):
+            prompt=make_font(9,"hud",True).render("E TAKE KEYCARD",True,col)
+            surface.blit(prompt,(r.centerx-prompt.get_width()//2,r.y-25))
 
 class Terminal:
     W=38; H=54
@@ -1474,7 +1588,7 @@ class Terminal:
         if req and req not in keycards and "Master Key" not in keycards:
             return "denied", f"ACCESS DENIED\n{req} Required"
 
-        if action=="unlock_boss_area" and not mission_state.get("complete",False):
+        if action=="unlock_boss_area" and not mission_complete_for_boss_gate():
             return "locked", "Mission incomplete"
 
         return "ready", "Ready"
@@ -1510,6 +1624,8 @@ class Terminal:
         player_obj.terminals_hacked+=1
         unlock_achievement("terminal_hacker","Terminal Hacker")
         if player_obj.terminals_hacked>=8: unlock_achievement("master_hacker","Master Hacker")
+        if action=="unlock_ventilation" and level==7:
+            add_mission_progress("terminal_lift",1)
         self.message=f"{data.get('label',action)} complete"
         save_progress_state(include_session_kills=False); sounds.play("ui_click")
         toast(self.message,"TERM",CYAN,120)
@@ -1584,6 +1700,7 @@ class SecurityDoor:
     W=34; H=82
     def __init__(self,wx,wy,door_id,required_action="unlock_security_door",required_terminal_id=None,marker_label=""):
         self.wx=float(wx); self.wy=float(wy); self.door_id=door_id; self.required_action=required_action; self.required_terminal_id=required_terminal_id; self.marker_label=marker_label; self.anim_t=random.randint(0,999)
+        self.open_progress=0.0
     def unlocked(self):
         if self.required_terminal_id:
             return terminal_action_completed(self.required_action,self.required_terminal_id)
@@ -1592,19 +1709,38 @@ class SecurityDoor:
     def get_rect(self): return pygame.Rect(self.wx,self.wy,self.W,self.H) if not self.unlocked() else pygame.Rect(self.wx,self.wy,0,0)
     def draw(self,surface,cam):
         sx,sy=cam.apply(self.wx,self.wy)
-        if not(-50<sx<SCREEN_W+50): return
+        if not(-80<sx<SCREEN_W+80): return
         self.anim_t+=1
-        col=GREEN if self.unlocked() else RED; h=18 if self.unlocked() else self.H
-        r=pygame.Rect(int(sx),int(sy+self.H-h),self.W,h)
-        if self.marker_label and not self.unlocked():
+        unlocked=self.unlocked()
+        self.open_progress=min(1.0,self.open_progress+0.055) if unlocked else 0.0
+        col=GREEN if unlocked else RED
+        frame=pygame.Rect(int(sx)-7,int(sy)-5,self.W+14,self.H+10)
+        door=pygame.Rect(int(sx),int(sy),self.W,self.H)
+        if self.marker_label and not unlocked:
             pulse=int(70+45*math.sin(self.anim_t*0.08))
             glow=pygame.Surface((self.W+42,self.H+48),pygame.SRCALPHA)
             pygame.draw.rect(glow,(*YELLOW,max(20,pulse)),(8,12,self.W+26,self.H+18),border_radius=8,width=3)
-            surface.blit(glow,(r.x-21,int(sy)-22))
-        pygame.draw.rect(surface,(35,18,24),r,border_radius=4); pygame.draw.rect(surface,col,r,border_radius=4,width=2)
-        if self.marker_label and not self.unlocked():
+            surface.blit(glow,(door.x-21,int(sy)-22))
+        pygame.draw.rect(surface,(7,10,20),frame,border_radius=5)
+        pygame.draw.rect(surface,(55,62,76),frame,border_radius=5,width=2)
+        panel_h=max(0,int((self.H/2)*(1.0-self.open_progress)))
+        top_panel=pygame.Rect(door.x,door.y,door.w,panel_h)
+        bot_panel=pygame.Rect(door.x,door.bottom-panel_h,door.w,panel_h)
+        for panel in (top_panel,bot_panel):
+            if panel.h>0:
+                pygame.draw.rect(surface,(35,18,24) if not unlocked else (18,38,28),panel,border_radius=3)
+                pygame.draw.rect(surface,col,panel,border_radius=3,width=2)
+                for yy in range(panel.y+10,panel.bottom-6,18): pygame.draw.line(surface,(70,76,90),(panel.x+5,yy),(panel.right-5,yy),1)
+        pygame.draw.rect(surface,(5,8,18),door,border_radius=4,width=1)
+        light_y=door.y+14+int(5*math.sin(self.anim_t*0.08))
+        pygame.draw.circle(surface,col,(door.centerx,light_y),6)
+        pygame.draw.circle(surface,col,(door.centerx,light_y),10,1)
+        status="OPEN" if unlocked else "LOCK"
+        tag=make_font(8,"hud",True).render(status,True,col)
+        surface.blit(tag,(door.centerx-tag.get_width()//2,door.bottom+4))
+        if self.marker_label and not unlocked:
             tag=make_font(10,"hud",True).render(self.marker_label,True,YELLOW)
-            surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-18))
+            surface.blit(tag,(door.centerx-tag.get_width()//2,door.y-18))
 
 class HiddenRoomEntrance:
     W=52; H=70
@@ -1637,6 +1773,68 @@ class HiddenRoomEntrance:
         pygame.draw.rect(surface,col,r,border_radius=6,width=2)
         for i in range(4): pygame.draw.line(surface,(40,35,62),(r.x+9,r.y+12+i*10),(r.right-9,r.y+12+i*10),1)
         hint=make_font(9,"hud",True).render("E",True,WHITE); pygame.draw.circle(surface,col,(r.centerx,r.y-10),9); surface.blit(hint,(r.centerx-hint.get_width()//2,r.y-16))
+        if self.completed():
+            cleared=make_font(9,"hud",True).render("CLEARED",True,GREEN)
+            surface.blit(cleared,(r.centerx-cleared.get_width()//2,r.bottom+2))
+
+class TerminalAccessEntrance(HiddenRoomEntrance):
+    def __init__(self,wx,wy,room_id,required_action,terminal_id,label="ACCESS"):
+        super().__init__(wx,wy,room_id,None,get_level_research_log_key(level) if "level" in globals() else "log_08")
+        self.required_action=required_action; self.terminal_id=terminal_id; self.label=label; self.open_progress=0.0
+    def unlocked(self): return terminal_action_completed(self.required_action,self.terminal_id)
+    def lv7_vent_exit(self,player_obj):
+        target_x=globals().get("boss_x_world",self.wx+520)-760
+        candidates=[]
+        for plat in globals().get("platforms",[]):
+            if plat.w<player_obj.WIDTH+28 or plat.y>=560 or plat.right<=self.wx+100: continue
+            candidates.append(plat)
+        if candidates:
+            plat=min(candidates,key=lambda p:abs(p.centerx-target_x))
+            return float(max(0,min(WORLD_W-player_obj.WIDTH,plat.centerx-player_obj.WIDTH//2))),float(max(18,plat.top-player_obj.HEIGHT-2))
+        return float(max(0,min(WORLD_W-player_obj.WIDTH,target_x))),480.0
+    def use_lv7_vent_route(self,player_obj):
+        first_visit=not self.completed()
+        if first_visit:
+            rooms=dict(save_data.get("hidden_rooms",{})); rooms[self.room_id]=True; save_data["hidden_rooms"]=rooms
+            player_obj.hidden_rooms_found+=1; add_session_stat("total_secrets",1)
+            player_obj.hp=min(player_obj.MAX_HP,player_obj.hp+1)
+            if random.random()<0.5: player_obj.pick_up_weapon(random.choice(["plasma","cryo","thunder"]))
+        spawn_pixels(player_obj.wx+player_obj.WIDTH//2,player_obj.wy+player_obj.HEIGHT//2,CYAN,18)
+        player_obj.wx,player_obj.wy=self.lv7_vent_exit(player_obj)
+        player_obj.vx=0; player_obj.vy=0; player_obj.fly_mode=False; player_obj.fly_buffer=0
+        spawn_pixels(player_obj.wx+player_obj.WIDTH//2,player_obj.wy+player_obj.HEIGHT//2,CYAN,22)
+        if first_visit: save_progress_state(include_session_kills=False)
+        toast("Main lift route open","ACCESS",CYAN,120)
+        return True
+    def use(self,player_obj):
+        if not self.unlocked():
+            trigger_terminal_warning(f"terminal_access_{self.room_id}",terminal_warning_for_action(self.required_action,self.room_id)); return True
+        if level==7 and self.room_id=="vent_07":
+            return self.use_lv7_vent_route(player_obj)
+        if not self.completed():
+            rooms=dict(save_data.get("hidden_rooms",{})); rooms[self.room_id]=True; save_data["hidden_rooms"]=rooms
+            player_obj.hidden_rooms_found+=1; add_session_stat("total_secrets",1)
+            player_obj.hp=min(player_obj.MAX_HP,player_obj.hp+1)
+            if random.random()<0.5: player_obj.pick_up_weapon(random.choice(["plasma","cryo","thunder"]))
+            save_progress_state(include_session_kills=False); toast(f"Entered {self.label}","ACCESS",CYAN,120)
+        else:
+            toast(f"{self.label} already cleared","ACCESS",TEXT_MUTED,90)
+        return True
+    def draw(self,surface,cam):
+        sx,sy=cam.apply(self.wx,self.wy)
+        if not(-80<sx<SCREEN_W+80): return
+        self.anim_t+=1; unlocked=self.unlocked(); self.open_progress=min(1.0,self.open_progress+0.07) if unlocked else 0.0; open_amt=self.open_progress; col=GREEN if unlocked else ORANGE
+        r=pygame.Rect(int(sx),int(sy),self.W,self.H)
+        pygame.draw.rect(surface,(8,12,22),r,border_radius=6)
+        pygame.draw.rect(surface,col,r,border_radius=6,width=2)
+        shutter_h=int((self.H-14)*(1-open_amt))
+        if shutter_h>0: pygame.draw.rect(surface,(36,38,48),(r.x+7,r.y+7,r.w-14,shutter_h),border_radius=4)
+        for i in range(4): pygame.draw.line(surface,(55,70,90),(r.x+9,r.y+13+i*11),(r.right-9,r.y+13+i*11),1)
+        tag=make_font(8,"hud",True).render(self.label,True,col); surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-13))
+        hint=make_font(9,"hud",True).render("E",True,WHITE); pygame.draw.circle(surface,col,(r.centerx,r.y-24),9); surface.blit(hint,(r.centerx-hint.get_width()//2,r.y-30))
+        if self.completed():
+            cleared=make_font(9,"hud",True).render("CLEARED",True,GREEN)
+            surface.blit(cleared,(r.centerx-cleared.get_width()//2,r.bottom+2))
 
 # ------------------------------------------------------------------------------------
 # MOVING PLATFORM
@@ -1743,7 +1941,7 @@ class FallingPlatform(MovingPlatform):
 
 class ConveyorPlatform(MovingPlatform):
     def __init__(self,x,y,w,direction=1):
-        super().__init__(x,y,w,0,0,False); self.direction=1 if direction>=0 else -1; self.t=random.uniform(0,999)
+        super().__init__(x,y,w,0,0,False); self.direction=1 if direction>=0 else -1; self.t=random.uniform(0,999); self.conveyor_speed=1.65
     def update(self): self.t+=1
     def draw(self,surface,cam):
         sr=cam.apply_rect(self.rect)
@@ -1752,6 +1950,42 @@ class ConveyorPlatform(MovingPlatform):
         off=int(self.t*1.5*self.direction)%18
         for x in range(sr.x-18+off,sr.right+18,18):
             pygame.draw.polygon(surface,(120,245,220),[(x,sr.y+4),(x+8*self.direction,sr.y+8),(x,sr.y+12)])
+
+class PoweredPlatform(MovingPlatform):
+    def __init__(self,x,y,w,required_action,terminal_id,move_range=80,speed=1.0,vertical=False):
+        super().__init__(x,y,w,move_range,speed,vertical); self.required_action=required_action; self.terminal_id=terminal_id
+    def powered(self): return terminal_action_completed(self.required_action,self.terminal_id)
+    def update(self):
+        if self.powered(): super().update()
+    def draw(self,surface,cam):
+        sr=cam.apply_rect(self.rect)
+        if not(-10<sr.x<SCREEN_W+10): return
+        if self.powered():
+            draw_platform(surface,sr,get_level_data(level)["theme"] if "level" in globals() else "station",variant="moving")
+            col=NEON_GREEN; tag="POWER ON"
+        else:
+            pygame.draw.rect(surface,(18,22,34),sr,border_radius=4)
+            pygame.draw.rect(surface,(80,70,45),sr,border_radius=4,width=1)
+            col=ORANGE; tag="POWER OFF"
+        txt=make_font(8,"hud",True).render(tag,True,col); surface.blit(txt,(sr.centerx-txt.get_width()//2,sr.y-12))
+
+class BridgePlatform(MovingPlatform):
+    def __init__(self,x,y,w,required_action,terminal_id):
+        super().__init__(x,y,w,0,0,False); self.base_rect=self.rect.copy(); self.required_action=required_action; self.terminal_id=terminal_id
+    def active(self): return terminal_action_completed(self.required_action,self.terminal_id)
+    def update(self):
+        self.rect=self.base_rect.copy() if self.active() else pygame.Rect(self.base_rect.x,self.base_rect.y,0,self.base_rect.h)
+    def draw(self,surface,cam):
+        full=cam.apply_rect(self.base_rect)
+        if not(-20<full.x<SCREEN_W+20): return
+        prog=1.0 if self.active() else 0.18
+        shown=pygame.Rect(full.x,full.y,max(8,int(full.w*prog)),full.h)
+        pygame.draw.rect(surface,(14,18,28),full,border_radius=4)
+        pygame.draw.rect(surface,(55,62,78),full,border_radius=4,width=1)
+        if self.active(): draw_platform(surface,shown,get_level_data(level)["theme"] if "level" in globals() else "station",variant="moving")
+        else: pygame.draw.rect(surface,(70,80,92),shown,border_radius=4)
+        tag=make_font(8,"hud",True).render("BRIDGE EXTENDED" if self.active() else "BRIDGE RETRACTED",True,NEON_GREEN if self.active() else ORANGE)
+        surface.blit(tag,(full.centerx-tag.get_width()//2,full.y-13))
 
 class RotatingPlatform(MovingPlatform):
     """Decorative rotating platform; collision remains its axis-aligned rect for stability."""
@@ -2075,20 +2309,29 @@ class SpikeTrap:
     def get_rect(self): return pygame.Rect(self.x+2,self.y-4,self.w-4,16)
 
 class LaserTrap:
-    def __init__(self,x,y,h=190,cycle=150,phase=0):
-        self.x=float(x); self.y=float(y); self.h=int(h); self.cycle=int(cycle); self.phase=int(phase); self.t=phase
-    def active(self): return (self.t%self.cycle)>self.cycle*0.42
+    def __init__(self,x,y,h=190,cycle=150,phase=0,level_num=None,required_action=None,terminal_id=None):
+        self.x=float(x); self.y=float(y); self.h=int(h); self.cycle=int(cycle); self.phase=int(phase); self.t=phase; self.level_num=level_num; self.required_action=required_action; self.terminal_id=terminal_id
+    def disabled(self):
+        if self.required_action: return terminal_action_completed(self.required_action,self.terminal_id)
+        return self.level_num is not None and globals().get("lasers_disabled_for_level",lambda _lvl:False)(self.level_num)
+    def active(self):
+        if self.disabled(): return False
+        if self.required_action in ("disable_security_grid","unlock_reactor_core"): return True
+        return (self.t%self.cycle)>self.cycle*0.42
     def draw(self,surface,cam):
         self.t+=1
         sx,sy=cam.apply(self.x,self.y)
         if not(-30<sx<SCREEN_W+30): return
-        warn=not self.active() and (self.t%self.cycle)>self.cycle*0.30
-        col=RED if self.active() else ORANGE if warn else (70,25,25)
-        width=4 if self.active() else 2
+        disabled=self.disabled(); active=self.active(); warn=not disabled and not active and (self.t%self.cycle)>self.cycle*0.30 and self.required_action not in ("disable_security_grid","unlock_reactor_core")
+        col=(45,70,80) if disabled else RED if active else ORANGE if warn else (70,25,25)
+        width=1 if disabled else 4 if active else 2
         pygame.draw.rect(surface,(45,45,60),(int(sx)-7,int(sy)-8,14,8),border_radius=3)
         pygame.draw.rect(surface,(45,45,60),(int(sx)-7,int(sy)+self.h,14,8),border_radius=3)
         pygame.draw.line(surface,col,(int(sx),int(sy)),(int(sx),int(sy)+self.h),width)
-        if self.active():
+        if disabled:
+            off=make_font(8,"hud",True).render("OFF",True,CYAN)
+            surface.blit(off,(int(sx)-off.get_width()//2,int(sy)+self.h//2-5))
+        elif active:
             glow=pygame.Surface((26,self.h),pygame.SRCALPHA); glow.fill((255,40,40,38)); surface.blit(glow,(int(sx)-13,int(sy)))
     def get_rect(self):
         if not self.active(): return pygame.Rect(self.x,self.y,0,0)
@@ -2137,7 +2380,7 @@ class TunnelSegment:
         if safe_right<=safe_left: return
         if self.kind=="laser_service":
             for i,fx in enumerate((0.34,0.58,0.78)):
-                self.hazards.append({"type":"laser","x":self.x+self.width*fx,"cycle":150,"phase":i*43,"h":self.gap_h-30})
+                self.hazards.append({"type":"laser","x":self.x+self.width*fx,"cycle":150,"phase":i*43,"h":self.gap_h-16})
             self.props.append(("warning",self.x+self.width*0.18,self.gap_y+22))
         elif self.kind=="reactor_steam":
             for i,fx in enumerate((0.28,0.52,0.74)):
@@ -2158,7 +2401,23 @@ class TunnelSegment:
             for i,fx in enumerate((0.36,0.64)):
                 self.hazards.append({"type":"scanner","x":self.x+self.width*fx,"cycle":185,"phase":i*62,"h":self.gap_h-34})
         else:
+            for i,fx in enumerate((0.32,0.58)):
+                self.supports.append({"rect":pygame.Rect(int(self.x+self.width*fx),int(self.floor_y-48-(i%2)*36),92,12),"cycle":190,"phase":i*54,"kind":"conveyor","dir":1 if i%2==0 else -1})
+            self.hazards.append({"type":"scanner","x":self.x+self.width*0.74,"cycle":170,"phase":28,"h":self.gap_h-24})
             self.props.append(("maintenance",self.x+self.width*0.50,self.gap_y+28))
+
+        if self.level_num>=12:
+            for i,fx in enumerate((0.22,0.46,0.70)):
+                self.hazards.append({"type":"drone","x":self.x+self.width*fx,"y":self.gap_y+44+i*18,"range":62+i*10,"phase":i*1.35,"r":13+i%2})
+            for i,fx in enumerate((0.36,0.58,0.80)):
+                self.hazards.append({"type":"scanner","x":self.x+self.width*fx,"cycle":130+i*18,"phase":i*41,"h":self.gap_h-32})
+            self.props.append(("prototype",self.x+self.width*0.18,self.gap_y+30))
+
+        ladder_x=int(self.x+self.width*0.88)
+        ladder_top=max(self.gap_y+14,self.floor_y-150)
+        ladder_step_h=18
+        for ly in range(self.floor_y-18,ladder_top,-ladder_step_h):
+            self.supports.append({"rect":pygame.Rect(ladder_x,int(ly),28,10),"cycle":1,"phase":0,"always":True,"kind":"ladder"})
     def coin_positions(self,count=4):
         count=max(1,count)
         spacing=self.width/(count+1)
@@ -2168,7 +2427,7 @@ class TunnelSegment:
     def get_support_rects(self,t):
         rects=[]
         for sp in self.supports:
-            if self._active(sp,t): rects.append(sp["rect"])
+            if sp.get("always") or self._active(sp,t): rects.append(sp["rect"])
         return rects
     def get_hazard_rects(self,t):
         rects=[]; disabled=globals().get("lasers_disabled_for_level",lambda _lvl:False)(self.level_num)
@@ -2189,6 +2448,9 @@ class TunnelSegment:
         for sr in self.get_support_rects(t):
             if pr.colliderect(sr) and player_obj.wy+player_obj.HEIGHT-player_obj.vy<=sr.top+8:
                 player_obj.wy=float(sr.top-player_obj.HEIGHT); player_obj.vy=0; player_obj.on_ground=True; pr=player_obj.get_rect()
+                for sp in self.supports:
+                    if sp.get("kind")=="conveyor" and sp["rect"]==sr:
+                        player_obj.wx+=sp.get("dir",1)*1.25; pr=player_obj.get_rect(); break
         for hr in self.get_hazard_rects(t):
             if player_obj.invincible==0 and pr.colliderect(hr):
                 if player_obj.take_damage(1): return True
@@ -2205,9 +2467,18 @@ class TunnelSegment:
         pygame.draw.rect(surface,col_light,(sr_bot.x,sr_bot.y,sr_bot.w,4))
         t=pygame.time.get_ticks()/16.0; disabled=globals().get("lasers_disabled_for_level",lambda _lvl:False)(self.level_num)
         for sp in self.supports:
-            rr=cam.apply_rect(sp["rect"]); active=self._active(sp,t); ac=(70,210,190) if active else (45,55,70)
+            rr=cam.apply_rect(sp["rect"]); active=sp.get("always") or self._active(sp,t); ac=(70,210,190) if active else (45,55,70)
             pygame.draw.rect(surface,(12,18,30),rr,border_radius=4); pygame.draw.rect(surface,ac,rr,border_radius=4,width=1)
             if not active: pygame.draw.line(surface,(90,90,100),(rr.x+5,rr.y+rr.h//2),(rr.right-5,rr.y+rr.h//2),1)
+            if sp.get("kind")=="conveyor" and active:
+                d=1 if sp.get("dir",1)>=0 else -1
+                for ax in range(rr.x+12,rr.right-10,22):
+                    pygame.draw.polygon(surface,NEON_CYAN,[(ax,rr.y+3),(ax+8*d,rr.y+6),(ax,rr.y+9)])
+            elif sp.get("kind")=="ladder" and active:
+                for ax in (rr.x+7, rr.right-7):
+                    pygame.draw.line(surface,(130,180,210),(ax,rr.y+1),(ax,rr.bottom-1),1)
+                for ay in range(rr.y+2,rr.bottom-1,4):
+                    pygame.draw.line(surface,(130,180,210),(rr.x+5,ay),(rr.right-5,ay),1)
         for h in self.hazards:
             active=self._active(h,t)
             if h["type"] in ("laser","scanner") and disabled: active=False
@@ -3092,22 +3363,16 @@ def draw_g7(surface,x,y,fly_mode=False,walk_t=0,on_ground=True,vx=0,vy=0,skin_da
     eye_col=skin_data["eye"]; trail_col=skin_data["trail"]
     if fly_mode:
         t2=pygame.time.get_ticks()
-        thrust=1 if vy>0.5 else -1 if vy<-0.5 else 0
-        tilt=max(-5,min(5,int(vy*1.5)))
-        pulse=int(2*math.sin(t2*0.018)); wa=int(7*math.sin(t2*0.014))
-        for i in range(3):
-            tr=pygame.Surface((38+i*8,12+i*3),pygame.SRCALPHA)
-            pygame.draw.ellipse(tr,(*trail_col,max(0,42-i*12)),(0,0,38+i*8,12+i*3))
-            surface.blit(tr,(x-5-i*10,y+24+i*2+thrust*2))
-        pygame.draw.polygon(surface,dark_col,[(x+16,y+tilt),(x+32,y+14),(x+28,y+28+pulse),(x+4,y+28-pulse),(x,y+14)])
-        pygame.draw.polygon(surface,body_col,[(x+16,y+2+tilt),(x+28,y+13),(x+24,y+24+pulse),(x+8,y+24-pulse),(x+4,y+13)])
-        pygame.draw.polygon(surface,dark_col,[(x+4,y+14),(x-22,y+22+wa),(x-8,y+30+wa//3),(x+8,y+22)])
-        pygame.draw.polygon(surface,dark_col,[(x+28,y+14),(x+54,y+22-wa),(x+40,y+30-wa//3),(x+24,y+22)])
-        pygame.draw.ellipse(surface,accent_col,(x+10,y+5+tilt//2,12,11)); pygame.draw.ellipse(surface,eye_col,(x+13,y+8+tilt//2,6,5))
-        ta=int(170+75*math.sin(t2*0.024)); thr=pygame.Surface((12,22),pygame.SRCALPHA)
-        pygame.draw.ellipse(thr,(*accent_col,ta),(0,0,12,22)); surface.blit(thr,(x-1,y+26)); surface.blit(thr,(x+21,y+26))
-        if abs(vy)>1:
-            pygame.draw.circle(surface,WHITE,(x+16,y+13+tilt//2),1)
+        flame_len=18+int(7*abs(math.sin(t2*0.02)))+(4 if vy<0 else 0)
+        smoke_a=32+int(18*abs(math.sin(t2*0.009)))
+        for i in range(4):
+            sx=x+9+i*5-int(vx*0.4); sy=y+31+i*2
+            pygame.draw.circle(surface,(*trail_col,max(0,smoke_a-i*7)),(sx,sy+flame_len//2+i*3),5+i)
+        for jx in (x+11,x+19):
+            pygame.draw.polygon(surface,ORANGE,[(jx,y+29),(jx+3,y+29),(jx+1,y+29+flame_len)])
+            pygame.draw.polygon(surface,YELLOW,[(jx+1,y+31),(jx+2,y+31),(jx+1,y+29+flame_len//2)])
+        draw_g7(surface,x,y,False,walk_t,False,vx,vy,skin_data)
+        return
     else:
         t2=pygame.time.get_ticks()
         is_walking=abs(vx)>0.5 and on_ground
@@ -4014,16 +4279,7 @@ def update_powerups(player_obj,coins):
 
 def start_level_mission(level_num):
     global mission_state
-
-    mission = LEVEL_MISSIONS.get(
-        level_num,
-        {
-            "kind": "kills",
-            "target": 10,
-            "title": "Complete Mission"
-        }
-    )
-
+    mission=mission_definition_for_level(level_num)
 
     mission_state = {
         "kind": mission["kind"],
@@ -4056,6 +4312,9 @@ def add_mission_progress(kind, amount=1):
     global score, money
 
     if not mission_state:
+        return
+
+    if is_final_boss_level(level) and kind=="ai_core" and (not boss or getattr(boss,"alive",True)):
         return
 
     if mission_state.get("complete"):
@@ -4292,10 +4551,9 @@ class Player:
         if self.frozen>0: self.frozen-=1; self.vx=0; self.shoot_timer-=1; return
         self.dash_cd=max(0,self.dash_cd-1); self.dash_timer=max(0,self.dash_timer-1)
         self.can_fly=bool(fly_zone_active)
-        if fly_zone_active: self.fly_buffer=18
-        elif self.fly_buffer>0: self.fly_buffer-=1
+        self.fly_buffer=0
         was_fly_mode=self.fly_mode
-        self.fly_mode=fly_zone_active or self.fly_buffer>0
+        self.fly_mode=fly_zone_active
         entering_fly=self.fly_mode and not was_fly_mode
         exiting_fly=was_fly_mode and not self.fly_mode
         wants_dash=keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
@@ -4399,9 +4657,8 @@ class Player:
         was_ground=self.on_ground
         landing_vy=self.vy
         in_fly=any(fz.contains_for_mode(self.wx+self.WIDTH//2,self.fly_mode) for fz in fly_zones)
-        if in_fly: self.fly_buffer=18
-        elif self.fly_buffer>0: self.fly_buffer-=1
-        self.fly_mode=in_fly or self.fly_buffer>0
+        self.fly_buffer=0
+        self.fly_mode=in_fly
         if self.fly_mode:
             if self.fly_thrust: self.vy+=self.FLY_THRUST*0.32
             else: self.vy+=self.FLY_GRAVITY
@@ -4410,6 +4667,8 @@ class Player:
                 spawn_pixels(int(self.wx+self.WIDTH//2-8),int(self.wy+self.HEIGHT),CYAN,2)
             if self.wy<18: self.wy=18; self.vy=max(0,self.vy)
             if self.wy>SCREEN_H-64: self.wy=SCREEN_H-64; self.vy=min(0,self.vy)
+            if not any(fz.contains_for_mode(self.wx+self.WIDTH//2,True) for fz in fly_zones):
+                self.fly_mode=False; self.fly_thrust=False; self.fly_buffer=0
         else:
             if self.gliding:
                 self.vy=self.vy*0.92+self.GLIDE_GRAVITY
@@ -4429,7 +4688,8 @@ class Player:
                         dy=mp.rect.top-self.HEIGHT-self.wy
                         self.wy=mp.rect.top-self.HEIGHT; self.vy=0; self.on_ground=True; self.gliding=False; self.glide_lockout=0; self.glide_cooldown=0
                         if mp.vertical and dy<0: self.vy=dy*0.5
-                        if not mp.vertical: self.wx+=math.cos(mp.t)*mp.speed*mp.move_range*0.02
+                        if isinstance(mp,ConveyorPlatform): self.wx+=mp.direction*mp.conveyor_speed
+                        elif not mp.vertical: self.wx+=math.cos(mp.t)*mp.speed*mp.move_range*0.02
             if self.on_ground and not was_ground and landing_vy>9.0:
                 n=int(min(16,landing_vy//2))
                 spawn_pixels(int(self.wx),int(self.wy+self.HEIGHT-4),(150,230,220),n)
@@ -6445,7 +6705,8 @@ def generate_platform_layout(level_num,theme,x_start,x_end,section_type,rng,plat
         for i in range(5):
             px=x_start+75+i*190; py=486-(i%2)*54
             if px+150<x_end:
-                moving_plats.append(ConveyorPlatform(int(px),int(py),136+rng.randint(-8,18),1 if i%2==0 else -1))
+                conv=ConveyorPlatform(int(px),int(py),136+rng.randint(-8,18),1 if i%2==0 else -1)
+                moving_plats.append(conv); platforms.append(conv.rect.copy())
                 if i in(1,3): moving_plats.append(FallingPlatform(int(px+92),int(py-78),108,42+rng.randint(0,22)))
                 coins.append(Coin(px+50,float(py-32),"gold")); x_cursor=max(x_cursor,px+245)
     elif section_type==13:
@@ -6500,6 +6761,109 @@ def validate_authored_terminal_positions(terminals_list,platforms,water_zones,tu
         term.wx=float(nx); term.wy=float(ledge_y-term.H)
         ledge=pygame.Rect(nx-34,ledge_y,term.W+68,12)
         if not any(ledge.colliderect(p) for p in platforms): platforms.append(ledge)
+
+def _blocked_world_rect(rect,water_zones,tunnels):
+    if any(rect.colliderect(wz.get_rect()) for wz in water_zones): return True
+    return any(rect.colliderect(tun.get_top_rect()) or rect.colliderect(tun.get_bot_rect()) for tun in tunnels)
+
+def _safe_platform_for_pickup(plat,water_zones,tunnels,item_w,item_h):
+    if plat.y>=552 or plat.w<item_w+20: return False
+    test=pygame.Rect(plat.centerx-item_w//2,plat.top-item_h,item_w,item_h)
+    feet=pygame.Rect(max(plat.left,plat.centerx-18),plat.top,max(36,min(plat.w,72)),8)
+    return not _blocked_world_rect(test,water_zones,tunnels) and not any(feet.colliderect(wz.get_rect()) for wz in water_zones)
+
+def place_keycard_on_reachable_platform(preferred_x,keycard_type,platforms,water_zones,tunnels):
+    candidates=[p for p in platforms if _safe_platform_for_pickup(p,water_zones,tunnels,KeycardPickup.W,KeycardPickup.H)]
+    if not candidates:
+        fallback=[p for p in platforms if p.y<552 and p.w>=KeycardPickup.W+20]
+        if not fallback:
+            return KeycardPickup(preferred_x,520,keycard_type)
+        candidates=fallback
+    plat=min(candidates,key=lambda p:(abs(p.centerx-preferred_x),p.y))
+    kx=max(plat.left+8,min(plat.right-KeycardPickup.W-8,plat.centerx-KeycardPickup.W//2))
+    ky=plat.top-KeycardPickup.H-2
+    return KeycardPickup(kx,ky,keycard_type)
+
+def spawn_terminal_laser_barriers(level_num,terminal_x,spike_traps,platforms,water_zones,tunnels,after_terminal=False):
+    if lasers_disabled_for_level(level_num): return
+    offsets=(-210,-92) if level_num<4 else (-260,-150,-42)
+    if after_terminal: offsets=tuple(abs(o) for o in offsets)
+    for i,off in enumerate(offsets):
+        lx=max(220,min(WORLD_W-180,int(terminal_x+off)))
+        top_y=118
+        lower=[p.top for p in platforms if p.left-6<=lx<=p.right+6 and p.top>top_y+80]
+        bottom_y=min(lower) if lower else 560
+        if bottom_y<520 and any(p.top>=552 and p.left<=lx<=p.right for p in platforms): bottom_y=560
+        beam=LaserTrap(lx,top_y,max(120,bottom_y-top_y),138+i*18,i*43,level_num)
+        if not _blocked_world_rect(pygame.Rect(lx-7,beam.y,14,beam.h),water_zones,tunnels):
+            spike_traps.append(beam)
+
+def _coin_near_reachable_surface(coin,supports):
+    cr=coin.get_rect(); cx=cr.centerx
+    for sp in supports:
+        if sp.y>=590: continue
+        if sp.left-46<=cx<=sp.right+46 and 12<=sp.top-cr.centery<=112:
+            return True
+    return False
+
+def filter_unreachable_world_coins(coins,platforms,moving_plats,water_zones,tunnels,fly_zones):
+    supports=list(platforms)+[mp.rect for mp in moving_plats]
+    for tun in tunnels:
+        supports.extend(tun.get_support_rects(0))
+        supports.append(pygame.Rect(tun.x,tun.floor_y-8,tun.width,16))
+    filtered=[]
+    for coin in coins:
+        cr=coin.get_rect()
+        if _blocked_world_rect(cr,water_zones,tunnels): continue
+        if cr.top<24 or cr.bottom>SCREEN_H-24: continue
+        if any(cr.colliderect(p) for p in supports): continue
+        in_tunnel=any(tun.x+20<=coin.wx<=tun.x+tun.width-20 and tun.gap_y+20<=coin.wy<=tun.floor_y-20 for tun in tunnels)
+        in_fly_zone=any(fz.wx-60<=coin.wx<=fz.wx+fz.width+60 for fz in fly_zones)
+        if in_tunnel or in_fly_zone or _coin_near_reachable_surface(coin,supports):
+            filtered.append(coin)
+    coins[:]=filtered
+
+def spawn_conveyor_elites(enemies_list,moving_plats,level_num,rng):
+    elite_pool=["fast","shield","sniper","bomber"]
+    conveyors=[mp for mp in moving_plats if isinstance(mp,ConveyorPlatform)]
+    for idx,conv in enumerate(conveyors):
+        if idx%2==1 or rng.random()>0.72: continue
+        etype=elite_pool[(idx+level_num)%len(elite_pool)]
+        ex=conv.rect.centerx-ScoutBot.WIDTH//2
+        ey=conv.rect.top-ScoutBot.HEIGHT-2
+        enemies_list.append(ScoutBot(ex,ey,1.0+level_num*0.1,max(65,125-level_num*5),etype))
+
+def populate_tunnel_gameplay(tunnels,enemies_list,chests,coins,level_num,rng):
+    for idx,tun in enumerate(tunnels):
+        mid=tun.x+tun.width*0.5
+        enemy_type="elite_drone" if level_num>=7 and idx%2==0 else "drone"
+        enemies_list.append(ScoutBot(mid-ScoutBot.WIDTH//2,tun.gap_y+tun.gap_h*0.45,1.0+level_num*0.08,max(65,135-level_num*5),enemy_type))
+        if tun.width>620:
+            elite_type="sniper" if level_num>=6 else "fast"
+            enemies_list.append(ScoutBot(tun.x+tun.width*0.72,tun.gap_y+tun.gap_h*0.38,1.0+level_num*0.06,max(70,140-level_num*4),elite_type if level_num>=3 else "drone"))
+        if level_num>=12:
+            enemies_list.append(ScoutBot(tun.x+tun.width*0.34,tun.gap_y+tun.gap_h*0.34,1.0+level_num*0.09,max(55,118-level_num*3),"elite_drone"))
+            enemies_list.append(ScoutBot(tun.x+tun.width*0.88-ScoutBot.WIDTH,tun.floor_y-ScoutBot.HEIGHT-6,1.0+level_num*0.12,max(55,112-level_num*3),"reactor_sentinel" if is_final_boss_level(level_num) else "tunnel_guardian"))
+        cache=Chest(tun.x+tun.width*0.82,tun.floor_y-34,"rare" if level_num>=5 else "common")
+        chests.append(cache)
+        if level_num>=12 and idx%2==0:
+            chests.append(Chest(tun.x+tun.width*0.16,tun.gap_y+34,"secret"))
+        for ci in range(3):
+            coins.append(Coin(tun.x+tun.width*(0.22+ci*0.12),tun.gap_y+34+ci%2*18,"rare" if ci==1 and level_num>=4 else "gold"))
+        if level_num>=12:
+            for ci in range(3): coins.append(Coin(tun.x+tun.width*(0.58+ci*0.08),tun.floor_y-74-ci%2*14,"rare" if ci==1 else "gold"))
+
+def gate_flight_zones(fly_zones,required_action,terminal_id):
+    for fz in fly_zones:
+        fz.required_action=required_action; fz.required_terminal_id=terminal_id
+
+def add_security_grid(spike_traps,grid_x,required_action,terminal_id):
+    for i,dx in enumerate((-120,0,120)):
+        spike_traps.append(LaserTrap(grid_x+dx,120,430,130+i*20,i*37,None,required_action,terminal_id))
+
+def add_terminal_reward_cache(chests,coins,x,y,chest_type="rare"):
+    chests.append(Chest(x,y,chest_type))
+    for i in range(4): coins.append(Coin(x-42+i*28,y-28,"rare" if i==1 else "gold"))
 
 # ------------------------------------------------------------------------------------
 # PCG WORLD GENERATION
@@ -6588,33 +6952,69 @@ def generate_world(level_num, base_seed=None):
     chests.append(Chest(secret_x+72,secret_y-28,"secret"))
     for ci in range(5): coins.append(Coin(secret_x+20+ci*32,float(secret_y-30-rng2.randint(0,16)),"rare" if ci==2 else "gold"))
 
-    if level_num==2:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Maintenance Keycard"))
-        terminals.append(Terminal(int(WORLD_W*0.34),500,"lvl02_laser",["disable_laser","read_research_log"],"Maintenance Keycard"))
+    def add_keycard(preferred_x,keycard_type):
+        keycard_pickups.append(place_keycard_on_reachable_platform(int(preferred_x),keycard_type,platforms,water_zones,tunnels))
+
+    if level_num==1:
+        term_x=int(WORLD_W*0.18); terminals.append(Terminal(term_x,500,"lvl01_laser",["disable_laser","read_research_log"]))
+        spawn_terminal_laser_barriers(level_num,term_x,spike_traps,platforms,water_zones,tunnels,True)
+    elif level_num==2:
+        term_x=int(WORLD_W*0.26); terminals.append(Terminal(term_x,500,"lvl02_power",["restore_power","read_research_log"]))
+        moving_plats.append(PoweredPlatform(term_x+250,430,150,"restore_power","lvl02_power",85,0.9,True))
+        moving_plats.append(PoweredPlatform(term_x+500,392,140,"restore_power","lvl02_power",95,1.0,False))
+    elif level_num==3:
+        add_keycard(WORLD_W*0.24,"Maintenance Keycard")
+        term_x=int(WORLD_W*0.32); lab_x=term_x+310
+        terminals.append(Terminal(term_x,500,"lvl03_lab",["unlock_lab_door","read_research_log"],"Maintenance Keycard"))
+        security_doors.append(SecurityDoor(lab_x,450,"lab_door_3","unlock_lab_door","lvl03_lab","LAB"))
+        hidden_room_entrances.append(TerminalAccessEntrance(lab_x+86,490,"lab_03","unlock_lab_door","lvl03_lab","LAB"))
+        add_terminal_reward_cache(chests,coins,lab_x+150,510,"rare")
     elif level_num==4:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Maintenance Keycard"))
-        terminals.append(Terminal(int(WORLD_W*0.42),500,"lvl04_reactor",["disable_laser","read_research_log"],"Maintenance Keycard"))
+        add_keycard(WORLD_W*0.24,"Maintenance Keycard")
+        term_x=int(WORLD_W*0.28); terminals.append(Terminal(term_x,500,"lvl04_flight",["activate_flight_zone","read_research_log"],"Maintenance Keycard"))
+        if not fly_zones:
+            fz_x=max(term_x+360,min(WORLD_W-1600,term_x+900)); fly_zones.append(FlyZone(fz_x,1300,level_num,random.Random(rng.randint(0,2**63-1))))
+        gate_flight_zones(fly_zones,"activate_flight_zone","lvl04_flight")
+    elif level_num==5:
+        add_keycard(WORLD_W*0.24,"Security Keycard")
+        term_x=int(WORLD_W*0.34); vault_x=term_x+360
+        terminals.append(Terminal(term_x,500,"lvl05_vault",["unlock_security_vault","read_research_log"],"Security Keycard"))
+        security_doors.append(SecurityDoor(vault_x,450,"vault_5","unlock_security_vault","lvl05_vault","VAULT"))
+        hidden_room_entrances.append(TerminalAccessEntrance(vault_x+92,490,"vault_05","unlock_security_vault","lvl05_vault","VAULT"))
+        add_terminal_reward_cache(chests,coins,vault_x+155,510,"rare")
+        enemies_list.append(ScoutBot(vault_x+210,520,1.0+level_num*0.1,95,"shield"))
     elif level_num==6:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Security Keycard"))
+        add_keycard(WORLD_W*0.24,"Security Keycard")
         terminals.append(Terminal(int(WORLD_W*0.38),500,"lvl06_gate",["unlock_security_door","read_research_log"],"Security Keycard"))
     elif level_num==7:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Maintenance Keycard"))
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.37),520,"Maintenance Keycard"))
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.30),520,"Security Keycard"))
-        terminals.append(Terminal(int(WORLD_W*0.38),500,"lvl07_lift",["unlock_ventilation","read_research_log"],"Maintenance Keycard"))
+        add_keycard(WORLD_W*0.24,"Maintenance Keycard")
+        add_keycard(WORLD_W*0.37,"Maintenance Keycard")
+        add_keycard(WORLD_W*0.30,"Security Keycard")
+        term_x=int(WORLD_W*0.38); terminals.append(Terminal(term_x,500,"lvl07_vent",["unlock_ventilation","read_research_log"],"Maintenance Keycard"))
+        hidden_room_entrances.append(TerminalAccessEntrance(term_x+310,490,"vent_07","unlock_ventilation","lvl07_vent","VENT"))
     elif level_num==8:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Maintenance Keycard"))
+        add_keycard(WORLD_W*0.24,"Maintenance Keycard")
+        term_x=int(WORLD_W*0.31); terminals.append(Terminal(term_x,500,"lvl08_grid",["disable_security_grid","read_research_log"],"Maintenance Keycard"))
+        add_security_grid(spike_traps,term_x+360,"disable_security_grid","lvl08_grid")
         hidden_room_entrances.append(HiddenRoomEntrance(int(WORLD_W*0.61),490,"lab_08","Maintenance Keycard","log_08"))
-        terminals.append(Terminal(int(WORLD_W*0.31),500,"lvl08_log",["read_research_log"],"Maintenance Keycard"))
     elif level_num==9:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Maintenance Keycard"))
+        add_keycard(WORLD_W*0.24,"Maintenance Keycard")
         hidden_room_entrances.append(HiddenRoomEntrance(int(WORLD_W*0.57),490,"lab_09","Maintenance Keycard","log_09"))
+        term_x=int(WORLD_W*0.33); terminals.append(Terminal(term_x,500,"lvl09_bridge",["activate_bridge","read_research_log"],"Maintenance Keycard"))
+        moving_plats.append(BridgePlatform(term_x+300,430,330,"activate_bridge","lvl09_bridge"))
         proto_chest=Chest(int(WORLD_W*0.46),510,"rare"); proto_chest.content="plasma"; chests.append(proto_chest)
     elif level_num==10:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Security Keycard"))
-        terminals.append(Terminal(int(WORLD_W*0.37),500,"lvl10_master",["read_research_log"],"Master Key"))
+        add_keycard(WORLD_W*0.24,"Security Keycard")
+        term_x=int(WORLD_W*0.37); core_x=term_x+360
+        sentinel_x=max(term_x-260,int(WORLD_W*0.30))
+        enemies_list.append(ScoutBot(sentinel_x,520,2.0,70,"reactor_sentinel"))
+        terminals.append(Terminal(term_x,500,"lvl10_core",["unlock_reactor_core","read_research_log"],"Master Key"))
+        security_doors.append(SecurityDoor(core_x,450,"reactor_core_10","unlock_reactor_core","lvl10_core","CORE"))
+        for i,dx in enumerate((72,138,204)):
+            spike_traps.append(LaserTrap(core_x+dx,118,420,130+i*18,i*39,None,"unlock_reactor_core","lvl10_core"))
+        add_terminal_reward_cache(chests,coins,core_x+140,510,"rare")
     elif level_num==11:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Master Key"))
+        add_keycard(WORLD_W*0.24,"Master Key")
         terminals.append(Terminal(int(WORLD_W*0.35),500,"lvl11_core",["read_research_log"],"Master Key"))
 
     if level_num==6:
@@ -6626,17 +7026,15 @@ def generate_world(level_num, base_seed=None):
     security_doors.append(SecurityDoor(boss_x-300,450,f"boss_door_{level_num}","unlock_boss_area",f"boss_gate_{level_num}"))
 
     if level_num==3:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.47),520,"Maintenance Keycard"))
+        add_keycard(WORLD_W*0.47,"Maintenance Keycard")
     elif level_num==5:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.43),520,"Security Keycard"))
-    elif level_num==10:
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.52),520,"Master Key"))
+        add_keycard(WORLD_W*0.43,"Security Keycard")
 
     if level_num==5:
         for idx,offset in enumerate((-220,0,220),start=1):
             security_nodes.append(SecurityNode(boss_x-1320+offset,512,f"sec_{idx}"))
     if level_num in (12,13):
-        keycard_pickups.append(KeycardPickup(int(WORLD_W*0.24),520,"Master Key"))
+        add_keycard(WORLD_W*0.24,"Master Key")
     if level_num in (11,13):
         security_nodes.append(SecurityNode(int(WORLD_W*0.52),512,f"ai_core_{level_num}","ai_core","log_11"))
 
@@ -6664,6 +7062,9 @@ def generate_world(level_num, base_seed=None):
     for i in range(3+level_num//3):
         rwx=arena_x-500-i*120
         if rwx>1100: coins.append(Coin(rwx,260+i%2*40,"rare" if i%3==0 else "gold"))
+    populate_tunnel_gameplay(tunnels,enemies_list,chests,coins,level_num,rng)
+    spawn_conveyor_elites(enemies_list,moving_plats,level_num,rng)
+    filter_unreachable_world_coins(coins,platforms,moving_plats,water_zones,tunnels,fly_zones)
     validate_authored_terminal_positions(terminals,platforms,water_zones,tunnels,WORLD_W)
     avoid_weapon_hud_world_rewards(coins+chests+powerups,WORLD_W)
     debug_print("Level:", level_num)
@@ -6918,17 +7319,30 @@ def save_adventure_progress_fields(sd,player_obj):
     sd["mission_progress"]=dict(mission_state) if isinstance(mission_state,dict) else {}
 
 
-def terminal_action_completed(action_name,terminal_id=None):
-    states=save_data.get("terminal_states",{})
-    if terminal_id:
-        actions=states.get(terminal_id,[])
-        return isinstance(actions,list) and action_name in actions
-    return any(action_name in actions for actions in states.values() if isinstance(actions,list))
+def ensure_final_boss_mission_state():
+    if not is_final_boss_level(level): return
+    if mission_state.get("kind")=="ai_core" and not mission_state.get("complete",False): return
+    mission=final_boss_mission_definition()
+    mission_state.clear()
+    mission_state.update({
+        "kind":mission["kind"],
+        "title":mission["title"],
+        "target":mission["target"],
+        "progress":0,
+        "complete":False,
+        "timer":0,
+        "rewarded":False,
+    })
 
 
-def lasers_disabled_for_level(level_num):
-    return terminal_action_completed("disable_laser",f"lvl{level_num:02d}_laser") or terminal_action_completed("disable_laser",f"lvl{level_num:02d}_reactor")
-
+def mission_complete_for_boss_gate():
+    if not isinstance(mission_state,dict) or not mission_state: return False
+    if is_final_boss_level(level) and mission_state.get("kind")=="ai_core": return True
+    if mission_state.get("complete",False): return True
+    try:
+        return mission_state.get("progress",0)>=mission_state.get("target",1)
+    except TypeError:
+        return False
 
 def level_boss_terminal_ids(level_num):
     return {f"boss_gate_{level_num}"}
@@ -6939,7 +7353,22 @@ def level_terminal_action_completed(action_name,level_num):
 
 
 def is_boss_area_unlocked():
-    return mission_state.get("complete",False) and level_terminal_action_completed("unlock_boss_area",level)
+    return mission_complete_for_boss_gate() and level_terminal_action_completed("unlock_boss_area",level)
+
+def should_spawn_boss_encounter():
+    if boss_spawned or boss is not None: return False
+    if player.wx<=boss_x_world-720: return False
+    if is_final_boss_level(level) and mission_state.get("kind")=="ai_core":
+        return not mission_state.get("complete",False)
+    return mission_complete_for_boss_gate() and mission_state.get("timer",0)<=0 and is_boss_area_unlocked()
+
+def start_boss_encounter():
+    global boss_spawned,waiting_for_dialogue,boss
+    boss_spawned=True; waiting_for_dialogue=True
+    boss_id=active_boss_data.get("base_id",get_boss_id(level))
+    boss=Boss(boss_id,boss_x_world,active_boss_data,level)
+    debug_print("Boss X:", boss.wx if boss else None)
+    boss_dialogue.start(boss_id,boss.data["color"],level)
 
 
 def award_keycard(player_obj,keycard_type):
@@ -7028,8 +7457,15 @@ def handle_player_interaction():
 
 def terminal_action_caption(action):
     if action=="disable_laser": return "Disabling laser..."
+    if action=="restore_power": return "Restoring power..."
+    if action=="unlock_lab_door": return "Opening laboratory door..."
+    if action=="activate_flight_zone": return "Activating flight zone..."
+    if action=="unlock_security_vault": return "Opening security vault..."
     if action=="unlock_security_door": return "Unlocking main gate..."
     if action=="unlock_ventilation": return "Unlocking ventilation..."
+    if action=="disable_security_grid": return "Disabling security grid..."
+    if action=="activate_bridge": return "Extending bridge..."
+    if action=="unlock_reactor_core": return "Unlocking reactor core..."
     if action=="unlock_boss_area": return "Opening boss area..."
     return "Accessing terminal..."
 
@@ -7311,10 +7747,11 @@ def _load_game_state(sd):
             player.weapon_levels=wl
 
     saved_mission=sd.get("mission_progress",{})
-    expected=LEVEL_MISSIONS.get(level,{})
-    if isinstance(saved_mission,dict) and saved_mission.get("kind")==expected.get("kind"):
+    expected=mission_definition_for_level(level)
+    if (not is_final_boss_level(level)) and isinstance(saved_mission,dict) and saved_mission.get("kind")==expected.get("kind"):
         mission_state.clear(); mission_state.update(saved_mission)
     save_data.update(sd)
+    ensure_final_boss_mission_state()
     reconcile_current_mission_progress()
 
 def continue_game():
@@ -7369,7 +7806,7 @@ def respawn():
     p_bullets=[]; e_bullets=[]; pixels=[]
     player.wx=max(0,min(WORLD_W-player.WIDTH,respawn_wx)); player.wy=max(18,min(SCREEN_H-player.HEIGHT-4,respawn_wy))
     player.vx=0; player.vy=0; player.hp=player.MAX_HP; player.frozen=0
-    player.invincible=180; player.fly_mode=any(fz.contains_for_mode(player.wx+player.WIDTH//2,False) for fz in fly_zones); player.fly_thrust=False; player.gliding=False; player.jump_held=False; player.glide_held=False; player.glide_lockout=0; player.fly_buffer=18 if player.fly_mode else 0
+    player.invincible=180; player.fly_mode=any(fz.contains_for_mode(player.wx+player.WIDTH//2,False) for fz in fly_zones); player.fly_thrust=False; player.gliding=False; player.jump_held=False; player.glide_held=False; player.glide_lockout=0; player.fly_buffer=0
     multiplier=1; mult_timer=0; mult_decay_tick=0; waiting_for_dialogue=False; camera=Camera(); camera.update(player.wx); print(f"[RESPAWN] respawn() called"); transition_to("playing")
     if boss_dialogue.active: boss_dialogue.skip_all()
     if boss_intro.active: boss_intro.skip()
@@ -7925,13 +8362,13 @@ while running:
     t=pygame.time.get_ticks()
     mx,my=pygame.mouse.get_pos()
     sync_ui_texts()
-    print(f"[FRAME] scene={scene} story_intro.active={story_intro.active} tutorial.active={tutorial.active} opening.active={opening.active} shop.active={shop.active} boss_dialogue.active={boss_dialogue.active}")
+    debug_print(f"[FRAME] scene={scene} story_intro.active={story_intro.active} tutorial.active={tutorial.active} opening.active={opening.active} shop.active={shop.active} boss_dialogue.active={boss_dialogue.active}")
 
     for event in pygame.event.get():
         if event.type==pygame.QUIT: running=False
 
         if opening.active:
-            print(f"[EVENT] opening.active=True scene={scene}")
+            debug_print(f"[EVENT] opening.active=True scene={scene}")
             wants_skip=(event.type in(pygame.MOUSEBUTTONDOWN,pygame.MOUSEBUTTONUP) and getattr(event,"button",1)==1) or event.type==pygame.FINGERDOWN
             wants_skip=wants_skip or (event.type==pygame.KEYDOWN and event.key in(pygame.K_SPACE,pygame.K_RETURN,pygame.K_ESCAPE))
             if wants_skip:
@@ -7944,7 +8381,7 @@ while running:
 
         # Tutorial - handle before everything else when active
         if tutorial.active:
-            print(f"[EVENT] tutorial.active=True scene={scene}")
+            debug_print(f"[EVENT] tutorial.active=True scene={scene}")
             if event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_ESCAPE: tutorial.skip()
                 elif event.key in(pygame.K_SPACE,pygame.K_RETURN): tutorial.next_slide()
@@ -7953,45 +8390,45 @@ while running:
 
         # Settings screen - blocks all gameplay input
         if settings_screen.active:
-            print(f"[EVENT] settings_screen.active=True scene={scene}")
+            debug_print(f"[EVENT] settings_screen.active=True scene={scene}")
             settings_screen.handle_event(event)
             continue
 
         if codex_screen.active:
-            print(f"[EVENT] codex_screen.active=True scene={scene}")
+            debug_print(f"[EVENT] codex_screen.active=True scene={scene}")
             codex_screen.handle_event(event)
             continue
 
         if achievement_screen.active:
-            print(f"[EVENT] achievement_screen.active=True scene={scene}")
+            debug_print(f"[EVENT] achievement_screen.active=True scene={scene}")
             achievement_screen.handle_event(event)
             continue
 
         if difficulty_screen.active:
-            print(f"[EVENT] difficulty_screen.active=True scene={scene}")
+            debug_print(f"[EVENT] difficulty_screen.active=True scene={scene}")
             difficulty_screen.handle_event(event)
             continue
 
         if stats_screen.active:
-            print(f"[EVENT] stats_screen.active=True scene={scene}")
+            debug_print(f"[EVENT] stats_screen.active=True scene={scene}")
             stats_screen.handle_event(event)
             continue
 
         if shop.active:
-            print(f"[EVENT] shop.active=True scene={scene}")
+            debug_print(f"[EVENT] shop.active=True scene={scene}")
             shop_handled=shop.handle_event(event,player)
             money=shop.coins
             if shop_handled: save_progress_state(include_session_kills=False)
             continue
 
         if story_intro.active:
-            print(f"[EVENT] story_intro.active=True scene={scene}")
-            if event.type==pygame.MOUSEBUTTONDOWN and event.button==1: story_intro.skip(); print(f"[STORY] skip() called")
-            if event.type==pygame.KEYDOWN and event.key==pygame.K_SPACE: story_intro.skip(); print(f"[STORY] skip() called")
+            debug_print(f"[EVENT] story_intro.active=True scene={scene}")
+            if event.type==pygame.MOUSEBUTTONDOWN and event.button==1: story_intro.skip(); debug_print(f"[STORY] skip() called")
+            if event.type==pygame.KEYDOWN and event.key==pygame.K_SPACE: story_intro.skip(); debug_print(f"[STORY] skip() called")
             continue
 
         if boss_dialogue.active:
-            print(f"[EVENT] boss_dialogue.active=True scene={scene}")
+            debug_print(f"[EVENT] boss_dialogue.active=True scene={scene}")
             if event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_SPACE: boss_dialogue.advance()
                 if event.key==pygame.K_ESCAPE: boss_dialogue.skip_all()
@@ -7999,7 +8436,7 @@ while running:
             continue
 
         if boss_intro.active:
-            print(f"[EVENT] boss_intro.active=True scene={scene}")
+            debug_print(f"[EVENT] boss_intro.active=True scene={scene}")
             if event.type==pygame.MOUSEBUTTONDOWN and event.button==1: boss_intro.skip()
             if event.type==pygame.KEYDOWN and event.key==pygame.K_SPACE: boss_intro.skip()
             continue
@@ -8245,19 +8682,19 @@ while running:
                 if btn_quit_m.is_clicked(event): running=False
 
         if scene=="paused":
-            print(f"[EVENT] scene==paused event.type={event.type}")
+            debug_print(f"[EVENT] scene==paused event.type={event.type}")
             if btn_resume_p.is_clicked(event):
-                print(f"[INPUT] Resume from pause")
+                debug_print(f"[INPUT] Resume from pause")
                 transition_to("playing")
             if btn_save_p.is_clicked(event): do_save(); sounds.play("ui_click")
             if btn_shop_p.is_clicked(event): shop.open(money,player); sounds.play("ui_click")
             if btn_restart.is_clicked(event):
-                print(f"[INPUT] Restart level")
+                debug_print(f"[INPUT] Restart level")
                 restart_level()
             if btn_settings_p.is_clicked(event): settings_screen.open(True); sounds.play("ui_click")
             if btn_menu_b.is_clicked(event):
                 do_save()
-                print(f"[INPUT] Quit to menu from pause")
+                debug_print(f"[INPUT] Quit to menu from pause")
                 transition_to("menu")
 
         if scene=="dead":
@@ -8287,15 +8724,15 @@ while running:
         if event.type==pygame.MOUSEBUTTONDOWN:
             print(f"[EVENT] MOUSEBUTTONDOWN scene={scene} pos={event.pos}")
             if event.button==1 and scene=="playing" and handle_volume_click(event.pos):
-                print(f"[INPUT] Volume click")
+                debug_print(f"[INPUT] Volume click")
                 continue
             if event.button==1 and scene=="menu" and not show_save_screen and FULLSCREEN_MENU_RECT.collidepoint(event.pos):
                 toggle_fullscreen(); save_settings(); continue
             if event.button==1 and scene=="playing" and SHOP_HUD_RECT.collidepoint(event.pos):
-                print(f"[INPUT] Shop HUD click")
+                debug_print(f"[INPUT] Shop HUD click")
                 shop.open(money,player); sounds.play("ui_click"); continue
             if event.button==1 and scene=="playing" and not level_clear and not boss_dialogue.active and not boss_intro.active:
-                print(f"[INPUT] Player shoot")
+                debug_print(f"[INPUT] Player shoot")
                 player.shoot_toward(p_bullets,mx,my,camera)
             if event.button==4 and scene=="playing": player.switch_weapon(-1); trigger_weapon_hud_expand()
             if event.button==5 and scene=="playing": player.switch_weapon(1); trigger_weapon_hud_expand()
@@ -8303,6 +8740,7 @@ while running:
     opening.update()
     tutorial.update()
     story_intro.update(); boss_dialogue.update(); boss_intro.update(); update_terminal_processing(); shake.update()
+    if terminal_warning_flash>0: terminal_warning_flash=max(0,terminal_warning_flash-1)
     if scene=="level_intro" and not story_intro.active:
         transition_to("playing")
         if pending_tutorial_after_intro:
@@ -8311,7 +8749,7 @@ while running:
     overlays_blocking=blocking_overlay_active()
 
     if overlays_blocking:
-        print(
+        debug_print(
             "[OVERLAY]",
             f"terminal={terminal_ui_active}",
             f"research={research_log_active}",
@@ -8342,7 +8780,7 @@ while running:
 
     can_update=(scene=="playing" and not level_clear and not story_intro.active
                 and not overlays_blocking)
-    print(f"[UPDATE] scene={scene} can_update={can_update} level_clear={level_clear} story_intro.active={story_intro.active} overlays_blocking={overlays_blocking}")
+    debug_print(f"[UPDATE] scene={scene} can_update={can_update} level_clear={level_clear} story_intro.active={story_intro.active} overlays_blocking={overlays_blocking}")
     if scene=="paused" and not overlays_blocking and pause_scale<1.0:
         pause_scale=min(1.0,pause_scale+0.06)
     if can_update:
@@ -8356,9 +8794,36 @@ while running:
                 for mp in moving_plats:
                     mp.update()
 
-                print("[3] BEFORE UPDATE:", player.wx, player.wy)
+                debug_print("[3] BEFORE UPDATE:", player.wx, player.wy)
 
                 player.update(platforms, moving_plats, fly_zones)
+                pr=player.get_rect()
+
+                for fz in fly_zones:
+                    if getattr(fz,"required_action",None) and not fz.enabled():
+                        pcx=player.wx+player.WIDTH//2
+                        if fz.wx<=pcx<=fz.wx+fz.width:
+                            trigger_terminal_warning(
+                                f"flight_zone_{getattr(fz,'required_terminal_id','')}",
+                                terminal_warning_for_action(fz.required_action),
+                                consequence=apply_flight_zone_offline_consequence,
+                                cooldown=90,
+                            )
+                            pr=player.get_rect()
+
+                for mp in moving_plats:
+                    if isinstance(mp,PoweredPlatform) and not mp.powered():
+                        if pr.colliderect(mp.rect.inflate(12,58)):
+                            trigger_terminal_warning(
+                                f"powered_platform_{mp.terminal_id}",
+                                terminal_warning_for_action(mp.required_action),
+                            )
+                    elif isinstance(mp,BridgePlatform) and not mp.active():
+                        if pr.colliderect(mp.base_rect.inflate(20,78)):
+                            trigger_terminal_warning(
+                                f"bridge_{mp.terminal_id}",
+                                terminal_warning_for_action(mp.required_action),
+                            )
                 for cp in checkpoints:
                     if player.get_rect().colliderect(cp.rect()):
                         if not cp.active:
@@ -8370,7 +8835,7 @@ while running:
                             respawn_wy = player.wy
                             save_progress_state()
 
-                print(
+                debug_print(
                     "[DEBUG]",
                     "Level =", level,
                     "Player =", (player.wx, player.wy),
@@ -8392,7 +8857,17 @@ while running:
                             add_mission_progress("cells", 1)
                         for kind,obs_rect in fz.get_collision_rects():
                             if fly_pr.colliderect(obs_rect) and player.invincible==0:
-                                if player.take_damage(1): player_died()
+                                if kind=="asteroid":
+                                    hit_orb=None
+                                    for mo in fz.mov_obs:
+                                        if mo.get("dead"): continue
+                                        sz=max(6,mo["size"]-5)
+                                        if fly_pr.colliderect(pygame.Rect(mo["wx"]-sz,mo["wy"]-sz,sz*2,sz*2)):
+                                            hit_orb=mo; break
+                                    if hit_orb and fz.trigger_orb_explosion(hit_orb,player): player_died()
+                                    fz.mov_obs=[mo for mo in fz.mov_obs if not mo.get("dead")]
+                                else:
+                                    if player.take_damage(1): player_died()
                                 break
 
                 if not player.fly_mode:
@@ -8418,6 +8893,12 @@ while running:
 
                 for sp in spike_traps:
                     if player.invincible==0 and pr.colliderect(sp.get_rect()):
+                        if isinstance(sp,LaserTrap):
+                            action=getattr(sp,"required_action",None) or "disable_laser"
+                            trigger_terminal_warning(
+                                f"laser_{getattr(sp,'terminal_id',None) or getattr(sp,'level_num',level)}",
+                                terminal_warning_for_action(action),
+                            )
                         if player.take_damage(1): player_died()
                         break
 
@@ -8427,7 +8908,10 @@ while running:
                         if player.wx+player.WIDTH//2<dr.centerx: player.wx=dr.left-player.WIDTH-2
                         else: player.wx=dr.right+2
                         player.vx=0
-                        toast("Security door locked", "LOCK", RED, 70)
+                        trigger_terminal_warning(
+                            f"security_door_{door.door_id}",
+                            terminal_warning_for_action(getattr(door,"required_action",""),getattr(door,"door_id","")),
+                        )
                         pr=player.get_rect()
 
                 for kc in keycard_pickups:
@@ -8508,12 +8992,9 @@ while running:
                             spawn_pixels(ch.wx,ch.wy,(127,119,221),20)
                 chests=[ch for ch in chests if ch.alive]
 
-                if mission_state.get("complete") and mission_state.get("timer",0)<=0 and is_boss_area_unlocked() and not boss_spawned and boss is None and player.wx>boss_x_world-720:
-                    boss_spawned=True; waiting_for_dialogue=True
-                    boss_id=active_boss_data.get("base_id",get_boss_id(level))
-                    boss=Boss(boss_id,boss_x_world,active_boss_data,level)
-                    debug_print("Boss X:", boss.wx if boss else None)
-                    boss_dialogue.start(boss_id,boss.data["color"],level)
+                ensure_final_boss_mission_state()
+                if should_spawn_boss_encounter():
+                    start_boss_encounter()
 
                 if waiting_for_dialogue and boss_dialogue.done:
                     waiting_for_dialogue=False
@@ -8669,9 +9150,10 @@ while running:
     if level_clear:
         level_clear_timer -= 1
         if level_clear_timer <= 0:
-            if level >= len(LEVEL_ORDER):
+            if is_final_boss_level(level):
                 score += 1000 * level
                 finish_game()
+                continue
             level += 1
             checkpoint = level
             score += 1000 * level
@@ -8694,7 +9176,7 @@ while running:
             camera = Camera()
 
             player.reset()
-            print("[1] AFTER RESET:", player.wx, player.wy)
+            debug_print("[1] AFTER RESET:", player.wx, player.wy)
 
             apply_permanent_unlocks(player)
             apply_shop_upgrades(player)
@@ -8706,7 +9188,7 @@ while running:
 
             level_clear = False
             start_level_intro(level)
-            print("[2] AFTER INTRO:", player.wx, player.wy)
+            debug_print("[2] AFTER INTRO:", player.wx, player.wy)
 
             screen_fade = 255
             screen_fade_dir = -1
@@ -8733,7 +9215,7 @@ while running:
 
     if opening.active:
         opening.draw(screen,font_lg,font_xl,font_sm,font_xs,t)
-        print(f"[DRAW] opening (active=True)")
+        debug_print(f"[DRAW] opening (active=True)")
         pygame.display.flip()
         skip_frame = True
 
@@ -8742,7 +9224,7 @@ while running:
         del skip_frame
 
     else:
-        print(
+        debug_print(
             "[DRAW]",
             overlays_blocking,
             terminal_ui_active,
@@ -9136,12 +9618,12 @@ while running:
             screen.blit(fs_txt,(FULLSCREEN_MENU_RECT.centerx-fs_txt.get_width()//2,FULLSCREEN_MENU_RECT.centery-fs_txt.get_height()//2))
 
         if scene=="level_intro":
-            print(f"[DRAW] level_intro")
+            debug_print(f"[DRAW] level_intro")
             screen.fill(DARK_BLUE)
             starfield.draw(screen, 0)
 
         elif scene == "playing" or scene == "paused":
-            print(f"[DRAW] playing/paused scene={scene} overlays_blocking={overlays_blocking} can_update={can_update}")
+            debug_print(f"[DRAW] playing/paused scene={scene} overlays_blocking={overlays_blocking} can_update={can_update}")
             in_facility = SHOW_FACILITY_SECTIONS and any(fs.contains(player.wx+player.WIDTH//2) for fs in facility_sections)
             if not in_facility: parallax_bg.draw(screen,camera.x,level)
             else: screen.fill((12,14,28))
@@ -9290,6 +9772,10 @@ while running:
                 screen.blit(br_sc,(br_panel.x+12,br_panel.y+24))
                 br_prog=font_xs.render(f"{boss_rush_wave}/{boss_rush_max_waves}",True,TEAL)
                 screen.blit(br_prog,(br_panel.right-br_prog.get_width()-10,br_panel.y+10))
+            if terminal_warning_flash>0:
+                warn_flash=get_cached_surface("terminal_warning_flash",SCREEN_W,SCREEN_H)
+                warn_flash.fill((255,0,0,int(92*terminal_warning_flash/18)))
+                screen.blit(warn_flash,(0,0))
             ty=HUD_TOP_Y+HUD_TOP_H+8
             for t3 in toasts[-3:]:
                 t3.draw(screen,font_xs,font_sm,ty)
@@ -9302,7 +9788,7 @@ while running:
                 if prog>0.25 and boss:
                     dn=render_fit(font_lg,tr("level.clear.defeated",name=boss.name),ORANGE,SCREEN_W-90)
                     b2_t=font_sm.render(tr("level.clear.done",level=level,bonus=1000*level),True,YELLOW)
-                    if level>=len(LEVEL_ORDER): nxt=font_sm.render(tr("level.clear.final"),True,CYAN)
+                    if is_final_boss_level(level): nxt=font_sm.render(tr("level.clear.final"),True,CYAN)
                     else:
                         nxt=render_fit(font_sm,tr("level.clear.next",level=level+1),CYAN,SCREEN_W-120)
                     ck=font_xs.render(tr("level.clear.save"),True,GREEN)
