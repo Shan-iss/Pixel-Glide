@@ -281,7 +281,7 @@ def unlock_achievement(key,title):
     ach.add(key)
     sd=load_save(current_save_file); sd["achievements"]=sorted(ach)
     if write_save(current_save_file,sd): save_data.update(sd)
-    if "player" in globals(): spawn_score(player.wx+player.WIDTH//2,player.wy-54,f"ACHIEVEMENT: {title}")
+    if "player" in globals(): spawn_score(player.wx+player.WIDTH//2,player.wy-54,tr("achievement.unlocked",title=title))
 
 ACHIEVEMENTS={
     "first_blood":{"title":"First Blood","desc":"Defeat your first enemy."},
@@ -302,12 +302,15 @@ ACHIEVEMENTS={
 
 DIFFICULTY_ORDER=["easy","normal","hard","nightmare"]
 DIFFICULTY_DATA={
-    "easy":{"name":"EASY","desc":"Lower incoming damage. Lower bonus rewards.","damage":0.75,"reward":0.85,"color":(29,158,117)},
+    "easy":{"name":"EASY","desc":"Lower incoming damage. Lower bonus rewards.","damage":0.8,"reward":0.85,"color":(29,158,117)},
     "normal":{"name":"NORMAL","desc":"Balanced NEXUS-7 protocol.","damage":1.0,"reward":1.0,"color":(93,202,165)},
-    "hard":{"name":"HARD","desc":"More punishment, better rewards.","damage":1.35,"reward":1.25,"color":(239,159,39)},
-    "nightmare":{"name":"NIGHTMARE","desc":"Maximum threat simulation. Best rewards.","damage":1.7,"reward":1.55,"color":(226,75,74)},
-    "corex":{"name":"CORE-X","desc":"Maximum threat simulation. Best rewards.","damage":1.7,"reward":1.55,"color":(226,75,74)},
+    "hard":{"name":"HARD","desc":"More punishment, better rewards.","damage":1.3,"reward":1.25,"color":(239,159,39)},
+    "nightmare":{"name":"NIGHTMARE","desc":"Maximum threat simulation. Best rewards.","damage":1.5,"reward":1.55,"color":(226,75,74)},
+    "corex":{"name":"CORE-X","desc":"Maximum threat simulation. Best rewards.","damage":1.5,"reward":1.55,"color":(226,75,74)},
 }
+DIFFICULTY_ENEMY_HP_MULT={"easy":0.85,"normal":1.0,"hard":2.0,"nightmare":3.0,"corex":3.0}
+DIFFICULTY_ELITE_HP_MULT={"easy":0.95,"normal":1.0,"hard":2.35,"nightmare":3.35,"corex":3.35}
+DIFFICULTY_ENEMY_ATTACK_CD_MULT={"easy":1.08,"normal":1.0,"hard":0.9,"nightmare":0.82,"corex":0.82}
 
 def current_difficulty():
     diff=save_data.get("settings",{}).get("difficulty","normal")
@@ -315,6 +318,27 @@ def current_difficulty():
 
 def difficulty_reward_mult(): return DIFFICULTY_DATA[current_difficulty()]["reward"]
 def scale_incoming_damage(amount): return max(1,int(math.ceil(safe_damage_value(amount)*DIFFICULTY_DATA[current_difficulty()]["damage"])))
+def scale_enemy_hp_value(base_hp,elite=False):
+    mult=(DIFFICULTY_ELITE_HP_MULT if elite else DIFFICULTY_ENEMY_HP_MULT).get(current_difficulty(),1.0)
+    return max(1,int(math.ceil(safe_hp_value(base_hp,1)*mult)))
+def scale_enemy_attack_cooldown(base_cd):
+    mult=DIFFICULTY_ENEMY_ATTACK_CD_MULT.get(current_difficulty(),1.0)
+    return max(24,int(round(base_cd*mult)))
+
+def apply_enemy_difficulty_scaling(enemy,base_hp=None,elite=False):
+    if getattr(enemy,"is_boss",False):
+        return enemy
+    if base_hp is None:
+        base_hp=getattr(enemy,"base_hp",getattr(enemy,"max_hp",getattr(enemy,"hp",1)))
+    if base_hp is None:
+        return enemy
+    scaled_hp=scale_enemy_hp_value(base_hp,elite=elite)
+    enemy.base_hp=base_hp
+    if hasattr(enemy,"max_hp"):
+        enemy.max_hp=scaled_hp
+    enemy.hp=scaled_hp
+    enemy._difficulty_scaled=True
+    return enemy
 
 def safe_damage_value(amount,default=1):
     try:
@@ -354,11 +378,11 @@ SUPPORTED_LANGS=("id","en")
 TEXT={
     "id":{
         "lang.name":"Indonesia","ui.on":"ON","ui.off":"OFF","ui.buy":"BELI","ui.locked":"KUNCI","ui.equip":"PAKAI","ui.equipped":"DIPAKAI","ui.less":"KURANG","ui.max":"MAKS","ui.maxed":"MAKSIMAL",
-        "menu.new_game":"GAME BARU","menu.continue":"LANJUTKAN","menu.save_data":"DATA SAVE","menu.settings":"PENGATURAN","menu.quit":"KELUAR",
+        "menu.new_game":"GAME BARU","menu.continue":"LANJUTKAN","menu.save_data":"DATA SAVE","menu.settings":"PENGATURAN","menu.stats":"STATISTIK","menu.quit":"KELUAR",
         "menu.subtitle":"Sci-Fi Robot Adventure","menu.version":"v6.6  |  13 Level  |  10 Boss","menu.high_score":"SKOR TERBAIK","menu.level":"Level","menu.plays":"Main","menu.bosses":"Boss Kalah",
         "menu.no_save":"Belum ada save  |  F5 = Save","menu.save":"Save: Level {level}  |  F5 = Save","menu.shop_hint":"B / TOKO [B] = buka toko","menu.fullscreen":"F11 / FULLSCREEN","menu.windowed":"F11 / WINDOWED",
         "save.title":"DATA SAVE","save.high_score":"SKOR TERBAIK","save.best_level":"LEVEL TERTINGGI","save.total_plays":"TOTAL MAIN","save.total_kills":"TOTAL KILL","save.bosses":"BOSS KALAH","save.last_level":"LEVEL TERAKHIR","save.back":"KEMBALI","save.slot_empty":"Slot Kosong","save.slot_level":"Level {lv}","save.slot_score":"Skor: {s}","save.slot_coins":"Koin: {c}","save.slot_hp":"HP: {hp}/{max}","save.slot_weapon":"Senjata: {w}","save.slot_date":"{d}","save.slot_time":"Waktu: {t:.0f}m","save.load":"MUAT","save.delete":"HAPUS","save.info":"Pilih slot untuk memuat atau menghapus data",
-        "save.play":"MAIN","save.view":"LIHAT DETAIL","save.play_time":"Waktu: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Kesulitan: {d}","save.weapon":"Senjata: {w}","save.overwrite_confirm":"Timpa save ini?","save.delete_confirm":"Hapus save ini?","save.yes":"YA","save.no":"TIDAK","save.select_slot":"PILIH SLOT","save.start_new":"MULAI BARU","save.rename":"GANTI NAMA","save.duplicate":"DUPLIKAT","save.new_game":"GAME BARU","save.name_placeholder":"Nama save...","save.create":"BUAT","save.cancel":"BATAL","save.name_required":"Nama tidak boleh kosong","save.rename_title":"GANTI NAMA SAVE","save.rename_placeholder":"Nama baru...","save.rename_confirm":"SIMPAN","save.duplicate_title":"Duplikat Save",
+        "save.play":"MAIN","save.view":"LIHAT DETAIL","save.play_time":"Waktu: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Kesulitan: {d}","save.weapon":"Senjata: {w}","save.overwrite_confirm":"Timpa save ini?","save.delete_confirm":"Hapus save ini?","save.yes":"YA","save.no":"TIDAK","save.select_slot":"PILIH SLOT","save.start_new":"MULAI BARU","save.rename":"GANTI NAMA","save.duplicate":"DUPLIKAT","save.new_game":"GAME BARU","save.name_placeholder":"Nama save...","save.create":"BUAT","save.cancel":"BATAL","save.name_required":"Nama tidak boleh kosong","save.rename_title":"GANTI NAMA SAVE","save.rename_placeholder":"Nama baru...","save.rename_confirm":"SIMPAN","save.duplicate_title":"Duplikat Save","save.no_data":"Tidak ada data save","save.invalid":"Save tidak valid",
         "settings.title":"PENGATURAN","settings.sound":"SUARA","settings.display_audio":"TAMPILAN & AUDIO","settings.controls":"REFERENSI KONTROL","settings.mute":"Mute Semua Suara","settings.fullscreen":"Mode Fullscreen","settings.particles":"Partikel Efek","settings.shake":"Intensitas Shake","settings.language":"Bahasa","settings.lang_value":"Indonesia","settings.reset":"RESET AWAL","settings.save_close":"SIMPAN & TUTUP","settings.footer":"ESC = simpan & tutup","settings.sfx":"Volume SFX","settings.bgm":"Volume BGM",
         "difficulty.title":"KESULITAN","difficulty.subtitle":"Pilih tingkat tantangan","difficulty.selected":"DIPILIH","difficulty.back":"KEMBALI","difficulty.next":"LANJUT","difficulty.close":"TUTUP","difficulty.footer":"Berlaku untuk run baru dan current run","difficulty.easy.name":"MUDAH","difficulty.normal.name":"NORMAL","difficulty.hard.name":"SULIT","difficulty.nightmare.name":"NIGHTMARE","difficulty.easy.desc":"Musuh lebih lemah. Lebih mudah dipelajari.","difficulty.normal.desc":"Seimbang untuk sebagian besar pemain.","difficulty.hard.desc":"Musuh lebih kuat. Timing harus lebih rapi.","difficulty.nightmare.desc":"Musuh sangat agresif. Hanya untuk run serius.", 
         "ctrl.move":"Bergerak","ctrl.jump":"Lompat","ctrl.shoot":"Tembak","ctrl.weapon":"Ganti Senjata","ctrl.pause":"Jeda","ctrl.save_shop":"Save / Toko","ctrl.save":"Save","ctrl.restart":"Ulang","ctrl.mute":"Mute","ctrl.volume":"Volume -/+","ctrl.fullscreen":"Fullscreen","ctrl.respawn":"Hidup Lagi","ctrl.left_click":"Klik Kiri",
@@ -370,22 +394,27 @@ TEXT={
         "pause.title":"JEDA","pause.score":"Skor: {score:06d}","pause.level":"Level: {level}","pause.best":"Terbaik: {best:06d}","pause.bosses":"Boss Kalah: {bosses}","pause.tip":"TIP: B = Toko  |  ESC = Lanjut","pause.resume":"LANJUT","pause.save_game":"SIMPAN GAME","pause.shop":"$  TOKO","pause.restart":"ULANG LEVEL","pause.settings":"PENGATURAN","pause.main_menu":"MENU UTAMA","pause.saved":"Game Berhasil Disimpan",
         "dead.title":"KAMU  KALAH","dead.info":"Nyawa: {lives}   Posisi: Level {level}","dead.boss":"Boss: {name}   HP tersisa: {hp}","dead.retry":"R / Klik  -  Ulang dari posisi","dead.game_over":"R / Klik  -  Game Over",
         "gameover.new_record":"REKOR BARU!","gameover.score":"SKOR  {score:06d}","gameover.stats":"Terbaik: {best:06d}   Level: {level}   Boss: {bosses}   Main: {plays}","gameover.boss":"Level: {level}   Boss: {boss}","gameover.back":"R / Klik  -  Kembali ke Main Menu",
-        "ending.title":"CORE-X HANCUR","ending.line1":"NEXUS-7 kembali online.","ending.line2":"Unit G7 menyelesaikan misi terakhir.","ending.line3":"Stasiun terselamatkan. Sistem bebas dari CORE-X.","ending.score":"SKOR AKHIR  {score:06d}","ending.back":"ENTER = kembali ke Main Menu","ending.skip":"SPACE = lewati kredit","ending.stats_title":"LAPORAN MISI SELESAI","ending.completion":"Penyelesaian","ending.difficulty":"Kesulitan","ending.play_time":"Waktu Bermain","ending.deaths":"Jumlah Kematian","ending.coins":"Koin Dikumpulkan","ending.enemies":"Musuh Dikalahkan","ending.bosses":"Boss Dikalahkan","credits.created_by":"Dibuat oleh","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Dosen Pembimbing","credits.supervisor_name":"Nama Dosen Pembimbing","credits.powered_by":"Didukung oleh","credits.thanks":"Ucapan Terima Kasih","credits.family":"Keluarga","credits.friends":"Teman-teman","credits.universitas":"Universitas Mulia","credits.thank_you":"Terima Kasih Telah Bermain",
-        "mission.header":"MISI","mission.complete":"SELESAI",
-        "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"TANTANGAN BOSS","boss.challenge_level":"TANTANGAN LEVEL {level}","boss.ability":"Ability: {desc}","boss.phase":"FASE {phase}",
-        "opening.start":"Tekan SPACE / Klik untuk mulai","opening.skip":"SPACE/Klik = lewati","dialogue.hint":"SPACE/Klik = lanjut  ESC = lewati",        "story.bonus":"LEVEL BONUS",
+        "ending.title":"CORE-X HANCUR","ending.line1":"NEXUS-7 kembali bernapas dalam cahaya darurat yang pelan.","ending.line2":"Komando memanggil G7, kali ini tanpa perintah tempur.","ending.line3":"G7 menyimpan fragmen terakhir CORE-X sebagai peringatan, bukan trofi.","ending.line4":"Jika pilihan bisa melukai, pilihan juga bisa memperbaiki.","ending.line5":"Untuk pertama kalinya sejak stasiun runtuh, keheningan terasa aman.","ending.score":"SKOR AKHIR  {score:06d}","ending.back":"ENTER = kembali ke Main Menu","ending.skip":"SPACE = lewati kredit","ending.stats_title":"LAPORAN MISI SELESAI","ending.completion":"Penyelesaian","ending.difficulty":"Kesulitan","ending.play_time":"Waktu Bermain","ending.deaths":"Jumlah Kematian","ending.coins":"Koin Dikumpulkan","ending.enemies":"Musuh Dikalahkan","ending.bosses":"Boss Dikalahkan","credits.created_by":"Dibuat oleh","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Dosen Pembimbing","credits.supervisor_name":"Nama Dosen Pembimbing","credits.powered_by":"Didukung oleh","credits.thanks":"Ucapan Terima Kasih","credits.family":"Keluarga","credits.friends":"Teman-teman","credits.universitas":"Universitas Mulia","credits.thank_you":"Terima Kasih Telah Bermain",
+        "mission.header":"MISI","mission.complete":"SELESAI","mission.complete_popup":"Misi Selesai!","mission.progress":"Progres  {progress} / {target}","mission.default":"Misi","mission.default_title":"Selesaikan Misi","mission.kills":"Kalahkan Musuh","mission.collect":"Kumpulkan Sel Energi","mission.keycard":"Ambil Keycard Maintenance","mission.terminal_reactor":"Perbaiki Reaktor","mission.security_nodes":"Hancurkan Node Keamanan","mission.terminal_gate":"Buka Gerbang Utama","mission.terminal_lift":"Aktifkan Lift Utama","mission.hidden_lab":"Selidiki Laboratorium Tersembunyi","mission.prototype":"Ambil Senjata Prototipe","mission.masterkey":"Ambil Master Key","mission.ai_core":"Hancurkan AI Core","mission.cells":"Stabilkan Anomali Void","mission.corex":"Hancurkan CORE-X","mission.security_node_destroyed":"NODE KEAMANAN HANCUR","mission.security_node_toast":"Node Keamanan Hancur ({progress}/{target})",
+        "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.status":"Status: {status}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"TANTANGAN BOSS","boss.challenge_level":"TANTANGAN LEVEL {level}","boss.ability":"Ability: {desc}","boss.phase":"FASE {phase}","boss.toast":"BOSS: {name}",
+        "opening.start":"Tekan SPACE / Klik untuk mulai","opening.skip":"SPACE/Klik = lewati","dialogue.hint":"SPACE = selesaikan  ENTER/E = lanjut  ESC = lewati","dialogue.continue":"> Lanjut",        "story.bonus":"LEVEL BONUS",
         "stats.title":"STATISTIK","stats.kills":"Total Kill","stats.deaths":"Total Mati","stats.coins":"Koin Terkumpul","stats.damage_dealt":"Damage Diberikan","stats.damage_taken":"Damage Diterima","stats.levels_cleared":"Level Diselesaikan","stats.secrets":"Rahasia Ditemukan","stats.chests":"Peti Dibuka","stats.highest_combo":"Kombo Tertinggi","stats.shots_fired":"Tembakan Dilepas","stats.boss_rush":"Gelombang Boss Rush","stats.play_time":"Waktu Bermain","stats.bosses":"Boss Dikalahkan","stats.best_level":"Level Terbaik","stats.high_score":"Skor Tertinggi","stats.total_plays":"Total Main","stats.accuracy":"Akurasi Tembak",
         "minimap.title":"MINIMAP","minimap.player":"G7","minimap.boss":"BOSS","minimap.enemy":"MUSUH","minimap.coin":"KOIN","minimap.chest":"PETI","minimap.checkpoint":"CHECKPOINT",
         "boss_rush.title":"BOSS RUSH","boss_rush.select":"PILIH BOSS UNTUK DILAWAN","boss_rush.start":"MULAI SERANGAN","boss_rush.back":"KEMBALI","boss_rush.score":"SKOR: {score}","boss_rush.wave":"GELOMBANG {wave}","boss_rush.complete":"BOSS RUSH SELESAI!","boss_rush.best":"TERBAIK: {score}","boss_rush.hint":"Kalahkan semua boss dalam satu sesi!","boss_rush.unlocked":"TERBUKA: Boss ke-{id}","boss_rush.locked":"TERKUNCI: Kalahkan Boss ke-{id}",
-        "challenge.title":"RUANG TANTANGAN","challenge.select":"PILIH TANTANGAN","challenge.rooms":"RUANG TERSEDIA","challenge.laser":"Labirin Laser","challenge.laser_desc":"Hindari laser dan kumpulkan koin!","challenge.server":"Server Lockdown","challenge.server_desc":"Kalahkan semua musuh dalam ruang terbatas!","challenge.corex":"Core-X Trial","challenge.corex_desc":"Hadapi Core-X dengan HP terbatas!",
+        "challenge.title":"RUANG TANTANGAN","challenge.select":"PILIH TANTANGAN","challenge.rooms":"RUANG TERSEDIA","challenge.laser":"Labirin Laser","challenge.laser_desc":"Hindari laser dan kumpulkan koin!","challenge.server":"Server Lockdown","challenge.server_desc":"Kalahkan semua musuh dalam ruang terbatas!","challenge.corex":"Core-X Trial","challenge.corex_desc":"Hadapi Core-X dengan HP terbatas!","challenge.security_active":"KEAMANAN AKTIF","challenge.laser_disabled":"LASER DINONAKTIFKAN","challenge.gate_opened":"GERBANG TERBUKA","challenge.start":"MULAI","challenge.active":"AKTIF","challenge.done":"SELESAI","challenge.security_gate_title":"PEMERIKSAAN KEAMANAN","challenge.heat_elevator_title":"TEKANAN PANAS NAIK","challenge.laser_room_title":"KEAMANAN LAB AKTIF","challenge.zero_gravity_corridor_title":"ZONA NOL GRAVITASI","challenge.glitch_room_title":"GLITCH SISTEM TERDETEKSI","challenge.frozen_corridor_title":"LOCKDOWN CRYO","challenge.server_lockdown_title":"LOCKDOWN SERVER","challenge.storm_elevator_title":"LONJAKAN ENERGI","challenge.reactor_core_room_title":"CORE TERBUKA","challenge.corex_trial_title":"PERTAHANAN CORE-X AKTIF","level.reward.time":"WAKTU","level.reward.no_damage":"TANPA DAMAGE","level.reward.mission":"MISI","level.reward.combo":"KOMBO","level.reward.rank":"RANK {rank}",
+        "terminal.title":"TERMINAL","terminal.select":"Pilih perintah terminal","terminal.hint":"1-9 / Klik = jalankan perintah   ESC = tutup","terminal.accessing":"MENGAKSES...","terminal.complete":"Selesai","terminal.ready":"Siap","terminal.already_complete":"Sudah selesai","terminal.access_denied":"AKSES DITOLAK","terminal.denied_required":"AKSES DITOLAK\nButuh {req}","terminal.mission_incomplete":"Misi belum selesai","terminal.research_opened":"Log riset dibuka","terminal.access_complete":"AKSES SELESAI","terminal.laser_disabled":"Laser Dinonaktifkan","terminal.label.disable_laser":"Matikan Laser","terminal.label.restore_power":"Pulihkan Daya","terminal.label.unlock_lab_door":"Buka Pintu Laboratorium","terminal.label.activate_flight_zone":"Aktifkan Zona Terbang","terminal.label.unlock_security_vault":"Buka Vault Keamanan","terminal.label.unlock_security_door":"Buka Gerbang Keamanan","terminal.label.unlock_ventilation":"Buka Ventilasi","terminal.label.disable_security_grid":"Matikan Grid Keamanan","terminal.label.activate_bridge":"Aktifkan Jembatan","terminal.label.unlock_reactor_core":"Buka Core Reaktor","terminal.label.read_research_log":"Baca Log Riset","terminal.label.unlock_boss_area":"Buka Area Boss","terminal.caption.disable_laser":"Mematikan laser...","terminal.caption.restore_power":"Memulihkan daya...","terminal.caption.unlock_lab_door":"Membuka pintu laboratorium...","terminal.caption.activate_flight_zone":"Mengaktifkan zona terbang...","terminal.caption.unlock_security_vault":"Membuka vault keamanan...","terminal.caption.unlock_security_door":"Membuka gerbang utama...","terminal.caption.unlock_ventilation":"Membuka ventilasi...","terminal.caption.disable_security_grid":"Mematikan grid keamanan...","terminal.caption.activate_bridge":"Memanjangkan jembatan...","terminal.caption.unlock_reactor_core":"Membuka core reaktor...","terminal.caption.unlock_boss_area":"Membuka area boss...","terminal.caption.default":"Mengakses terminal...","terminal.warn.disable_laser":"KEAMANAN LASER AKTIF","terminal.warn.restore_power":"SISTEM DAYA OFFLINE","terminal.warn.unlock_lab_door":"AKSES LAB DITOLAK","terminal.warn.activate_flight_zone":"SISTEM TERBANG OFFLINE","terminal.warn.unlock_security_vault":"VAULT KEAMANAN TERKUNCI","terminal.warn.unlock_security_door":"GERBANG UTAMA TERKUNCI","terminal.warn.unlock_ventilation":"LIFT UTAMA OFFLINE","terminal.warn.disable_security_grid":"GRID KEAMANAN AKTIF","terminal.warn.activate_bridge":"JEMBATAN OFFLINE","terminal.warn.unlock_reactor_core":"AKSES REAKTOR DITOLAK","terminal.warn.unlock_boss_area_boss":"GERBANG UTAMA TERKUNCI","terminal.warn.unlock_boss_area":"AKSES TERKUNCI","terminal.warn.default":"BUTUH TERMINAL","terminal.lock":"KUNCI","terminal.term":"TERM","terminal.key":"KEY","terminal.warning":"PERINGATAN","terminal.access":"AKSES","terminal.secret":"RAHASIA","terminal.open":"BUKA","terminal.cleared":"SELESAI","terminal.main_gate":"GERBANG UTAMA","terminal.interact_terminal":"E  TERMINAL","terminal.secret_access":"E  AKSES RAHASIA","terminal.take_keycard":"E AMBIL KEYCARD","terminal.key_tag":"KEY",
+        "keycard.Security Keycard":"Keycard Keamanan","keycard.Maintenance Keycard":"Keycard Maintenance","keycard.Master Key":"Master Key","keycard.already_has":"Sudah punya {name}","keycard.obtained":"Mendapat {name}","keycard.needs":"Butuh {name}",
+        "research.title":"FILE LOG RISET","research.close":"SPACE / ESC = tutup","research.accessing":"MENGAKSES FILE...","research.auth":"OTENTIKASI...","research.decrypt":"DEKRIPSI...","research.grant":"AKSES DIBERIKAN","research.author":"PENULIS","research.security":"KEAMANAN","research.project":"PROYEK","research.date":"TANGGAL","research.log":"LOG","research.locked_entry":"ENTRI TERKUNCI","research.log_label":"LOG RISET","research.entry_locked":"Entri terkunci. Temukan log ini melalui terminal, ruang tersembunyi, boss, atau event cerita NPC.","research.transmission_lost":"[TRANSMISI TERPUTUS]","research.log_unlocked":"LOG TERBUKA: {title}",
+        "codex.achievements":"PENCAPAIAN","codex.unlocked_count":"{count} / {total} TERBUKA","codex.locked_achievement":"Pencapaian terkunci","codex.data_locked":"DATA TERKUNCI","codex.locked_signal":"SINYAL TERKUNCI","codex.available":"TERSEDIA","codex.close_hint":"ESC / Klik luar = tutup","codex.high_score":"Skor Tertinggi","codex.best_level":"Level Terbaik","codex.kills":"Kill","codex.logs":"Log","codex.keycards":"Keycard","codex.damage":"Damage","codex.speed":"Kecepatan","codex.ammo":"Ammo","codex.shop_only":"Khusus Toko","codex.yes":"Ya","codex.no":"Tidak","codex.cost":"Harga: {cost} koin","codex.placeholder":"Masukkan nama save...","codex.placeholder_en":"Enter Save Name...","codex.route_open":"Jalur lift utama terbuka","codex.hidden_cleared":"Ruang tersembunyi dibersihkan","codex.hidden_cleared_again":"Ruang tersembunyi sudah dibersihkan","codex.tab.boss":"BOSS","codex.tab.enemy":"MUSUH","codex.tab.weapon":"SENJATA","codex.tab.story":"LOG","codex.tab.achievement":"ACHV","codex.tab.stats":"STAT","codex.ability":"Ability","codex.hp":"HP","codex.role":"Peran",
+        "hud.enemies_raw":"MUSUH: {count}","hud.pos":"POS: {pos}","hud.rank":"RANK {rank}   DMG {dmg}   KOMBO {combo}   {elapsed}s","hud.coins_reward":"KOIN","hud.env_event":"EVENT LINGKUNGAN: {event}  {seconds}s","hud.event_popup":"EVENT: {event}","hud.gate_opened":"GERBANG TERBUKA","hud.locked":"TERKUNCI","hud.open":"BUKA","hud.warning":"PERINGATAN!","hud.lightning_warning":"PERINGATAN PETIR","hud.lightning_lock":"KUNCI PETIR","hud.boss_attack":"SERANGAN BOSS","menu.combo_10":"KOMBO 10!","combo.drop":"DROP KOMBO x{count}","combo.mult":"KOMBO x{count}","boss_rush.waves":"gelombang","boss_rush.select_one":"Pilih minimal 1 boss!","chest.secret_cache":"CACHE RAHASIA","achievement.unlocked":"PENCAPAIAN: {title}",
     },
     "en":{
         "lang.name":"English","ui.on":"ON","ui.off":"OFF","ui.buy":"BUY","ui.locked":"LOCKED","ui.equip":"EQUIP","ui.equipped":"EQUIPPED","ui.less":"SHORT","ui.max":"MAX","ui.maxed":"MAXED",
-        "menu.new_game":"NEW GAME","menu.continue":"CONTINUE","menu.save_data":"SAVE DATA","menu.settings":"SETTINGS","menu.quit":"QUIT",
+        "menu.new_game":"NEW GAME","menu.continue":"CONTINUE","menu.save_data":"SAVE DATA","menu.settings":"SETTINGS","menu.stats":"STATISTICS","menu.quit":"QUIT",
         "menu.subtitle":"Sci-Fi Robot Adventure","menu.version":"v6.6  |  13 Levels  |  10 Bosses","menu.high_score":"HIGH SCORE","menu.level":"Level","menu.plays":"Plays","menu.bosses":"Bosses Defeated",
         "menu.no_save":"No save yet  |  F5 = Save","menu.save":"Save: Level {level}  |  F5 = Save","menu.shop_hint":"B / SHOP [B] = open shop","menu.fullscreen":"F11 / FULLSCREEN","menu.windowed":"F11 / WINDOWED",
         "save.title":"SAVE DATA","save.high_score":"HIGH SCORE","save.best_level":"BEST LEVEL","save.total_plays":"TOTAL PLAYS","save.total_kills":"TOTAL KILLS","save.bosses":"BOSSES DEFEATED","save.last_level":"LAST LEVEL","save.back":"BACK","save.slot_empty":"Empty Save Slot","save.slot_level":"Level {lv}","save.slot_score":"Score: {s}","save.slot_coins":"Coins: {c}","save.slot_hp":"HP: {hp}/{max}","save.slot_weapon":"Weapon: {w}","save.slot_date":"{d}","save.slot_time":"Time: {t:.0f}m","save.load":"LOAD","save.delete":"DELETE","save.info":"Select a slot to load or delete save data",
-        "save.play":"PLAY","save.view":"VIEW DETAILS","save.play_time":"Time: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Difficulty: {d}","save.weapon":"Weapon: {w}","save.overwrite_confirm":"Overwrite this save?","save.delete_confirm":"Delete this save?","save.yes":"YES","save.no":"NO","save.select_slot":"SELECT SLOT","save.start_new":"START NEW GAME","save.rename":"RENAME","save.duplicate":"DUPLICATE","save.new_game":"NEW GAME","save.name_placeholder":"Save name...","save.create":"CREATE","save.cancel":"CANCEL","save.name_required":"Name cannot be empty","save.rename_title":"RENAME SAVE","save.rename_placeholder":"New name...","save.rename_confirm":"SAVE","save.duplicate_title":"Duplicate Save",
+        "save.play":"PLAY","save.view":"VIEW DETAILS","save.play_time":"Time: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Difficulty: {d}","save.weapon":"Weapon: {w}","save.overwrite_confirm":"Overwrite this save?","save.delete_confirm":"Delete this save?","save.yes":"YES","save.no":"NO","save.select_slot":"SELECT SLOT","save.start_new":"START NEW GAME","save.rename":"RENAME","save.duplicate":"DUPLICATE","save.new_game":"NEW GAME","save.name_placeholder":"Save name...","save.create":"CREATE","save.cancel":"CANCEL","save.name_required":"Name cannot be empty","save.rename_title":"RENAME SAVE","save.rename_placeholder":"New name...","save.rename_confirm":"SAVE","save.duplicate_title":"Duplicate Save","save.no_data":"No save data","save.invalid":"Invalid save",
         "settings.title":"SETTINGS","settings.sound":"SOUND","settings.display_audio":"DISPLAY & AUDIO","settings.controls":"CONTROL REFERENCE","settings.mute":"Mute All Sound","settings.fullscreen":"Fullscreen Mode","settings.particles":"Particle Effects","settings.shake":"Shake Intensity","settings.language":"Language","settings.lang_value":"English","settings.reset":"RESET DEFAULT","settings.save_close":"SAVE & CLOSE","settings.footer":"ESC = save & close","settings.sfx":"SFX Volume","settings.bgm":"BGM Volume",
         "difficulty.title":"DIFFICULTY","difficulty.subtitle":"Choose a challenge level","difficulty.selected":"SELECTED","difficulty.back":"BACK","difficulty.next":"NEXT","difficulty.close":"CLOSE","difficulty.footer":"Applies to new and current runs","difficulty.easy.name":"EASY","difficulty.normal.name":"NORMAL","difficulty.hard.name":"HARD","difficulty.nightmare.name":"NIGHTMARE","difficulty.easy.desc":"Weaker enemies. Easier to learn.","difficulty.normal.desc":"Balanced for most players.","difficulty.hard.desc":"Stronger enemies. Cleaner timing needed.","difficulty.nightmare.desc":"Aggressive enemies. For serious runs only.", 
         "ctrl.move":"Move","ctrl.jump":"Jump","ctrl.shoot":"Shoot","ctrl.weapon":"Switch Weapon","ctrl.pause":"Pause","ctrl.save_shop":"Save / Shop","ctrl.save":"Save","ctrl.restart":"Restart","ctrl.mute":"Mute","ctrl.volume":"Volume -/+","ctrl.fullscreen":"Fullscreen","ctrl.respawn":"Respawn","ctrl.left_click":"Left Click",
@@ -397,14 +426,19 @@ TEXT={
         "pause.title":"PAUSED","pause.score":"Score: {score:06d}","pause.level":"Level: {level}","pause.best":"Best: {best:06d}","pause.bosses":"Bosses Defeated: {bosses}","pause.tip":"TIP: Press B = Shop  |  ESC = Resume","pause.resume":"RESUME","pause.save_game":"SAVE GAME","pause.shop":"$  SHOP","pause.restart":"RESTART LEVEL","pause.settings":"SETTINGS","pause.main_menu":"MAIN MENU","pause.saved":"Game Saved Successfully",
         "dead.title":"YOU  DIED","dead.info":"Lives: {lives}   Position: Level {level}","dead.boss":"Boss: {name}   HP left: {hp}","dead.retry":"R / Click  -  Retry from position","dead.game_over":"R / Click  -  Game Over",
         "gameover.new_record":"NEW RECORD!","gameover.score":"SCORE  {score:06d}","gameover.stats":"Best: {best:06d}   Level: {level}   Bosses: {bosses}   Plays: {plays}","gameover.boss":"Level: {level}   Boss: {boss}","gameover.back":"R / Click  -  Back to Main Menu",
-        "ending.title":"CORE-X DESTROYED","ending.line1":"NEXUS-7 is back online.","ending.line2":"Unit G7 completed the final mission.","ending.line3":"The station is safe. The system is free from CORE-X.","ending.score":"FINAL SCORE  {score:06d}","ending.back":"ENTER = Return to Main Menu","ending.skip":"SPACE = Skip Credits","ending.stats_title":"MISSION COMPLETE REPORT","ending.completion":"Completion","ending.difficulty":"Difficulty","ending.play_time":"Play Time","ending.deaths":"Deaths","ending.coins":"Coins Collected","ending.enemies":"Enemies Defeated","ending.bosses":"Bosses Defeated","credits.created_by":"Created by","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Supervisor","credits.supervisor_name":"Supervisor Name","credits.powered_by":"Powered By","credits.thanks":"Special Thanks","credits.family":"Family","credits.friends":"Friends","credits.universitas":"Universitas Mulia","credits.thank_you":"Thank You For Playing",
-        "mission.header":"MISSION","mission.complete":"COMPLETE",
-        "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"BOSS CHALLENGE","boss.challenge_level":"LEVEL {level} CHALLENGE","boss.ability":"Ability: {desc}","boss.phase":"PHASE {phase}",
-        "opening.start":"Press SPACE / Click to start","opening.skip":"SPACE/Click = skip","dialogue.hint":"SPACE/Click = next  ESC = skip",        "story.bonus":"BONUS LEVEL",
+        "ending.title":"CORE-X DESTROYED","ending.line1":"NEXUS-7 breathes again under slow emergency light.","ending.line2":"Command calls G7, this time without a combat order.","ending.line3":"G7 keeps the last CORE-X fragment as a warning, not a trophy.","ending.line4":"If choice can wound, choice can also repair.","ending.line5":"For the first time since the station fell, silence feels safe.","ending.score":"FINAL SCORE  {score:06d}","ending.back":"ENTER = Return to Main Menu","ending.skip":"SPACE = Skip Credits","ending.stats_title":"MISSION COMPLETE REPORT","ending.completion":"Completion","ending.difficulty":"Difficulty","ending.play_time":"Play Time","ending.deaths":"Deaths","ending.coins":"Coins Collected","ending.enemies":"Enemies Defeated","ending.bosses":"Bosses Defeated","credits.created_by":"Created by","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Supervisor","credits.supervisor_name":"Supervisor Name","credits.powered_by":"Powered By","credits.thanks":"Special Thanks","credits.family":"Family","credits.friends":"Friends","credits.universitas":"Universitas Mulia","credits.thank_you":"Thank You For Playing",
+        "mission.header":"MISSION","mission.complete":"COMPLETE","mission.complete_popup":"Mission Complete!","mission.progress":"Progress  {progress} / {target}","mission.default":"Mission","mission.default_title":"Complete Mission","mission.kills":"Defeat Enemies","mission.collect":"Collect Energy Cells","mission.keycard":"Obtain Maintenance Keycard","mission.terminal_reactor":"Repair Reactor","mission.security_nodes":"Destroy Security Nodes","mission.terminal_gate":"Unlock Main Gate","mission.terminal_lift":"Activate Main Lift","mission.hidden_lab":"Investigate Hidden Laboratory","mission.prototype":"Retrieve Prototype Weapon","mission.masterkey":"Obtain Master Key","mission.ai_core":"Destroy AI Core","mission.cells":"Stabilize Void Anomaly","mission.corex":"Destroy CORE-X","mission.security_node_destroyed":"SECURITY NODE DESTROYED","mission.security_node_toast":"Security Node Destroyed ({progress}/{target})",
+        "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.status":"Status: {status}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"BOSS CHALLENGE","boss.challenge_level":"LEVEL {level} CHALLENGE","boss.ability":"Ability: {desc}","boss.phase":"PHASE {phase}","boss.toast":"BOSS: {name}",
+        "opening.start":"Press SPACE / Click to start","opening.skip":"SPACE/Click = skip","dialogue.hint":"SPACE = complete  ENTER/E = continue  ESC = skip","dialogue.continue":"> Continue",        "story.bonus":"BONUS LEVEL",
         "stats.title":"STATISTICS","stats.kills":"Total Kills","stats.deaths":"Total Deaths","stats.coins":"Coins Collected","stats.damage_dealt":"Damage Dealt","stats.damage_taken":"Damage Taken","stats.levels_cleared":"Levels Cleared","stats.secrets":"Secrets Found","stats.chests":"Chests Opened","stats.highest_combo":"Highest Combo","stats.shots_fired":"Shots Fired","stats.boss_rush":"Boss Rush Waves","stats.play_time":"Play Time","stats.bosses":"Bosses Defeated","stats.best_level":"Best Level","stats.high_score":"High Score","stats.total_plays":"Total Plays","stats.accuracy":"Accuracy",
         "minimap.title":"MINIMAP","minimap.player":"G7","minimap.boss":"BOSS","minimap.enemy":"ENEMY","minimap.coin":"COIN","minimap.chest":"CHEST","minimap.checkpoint":"CHECKPOINT",
         "boss_rush.title":"BOSS RUSH","boss_rush.select":"SELECT BOSS TO FIGHT","boss_rush.start":"START ASSAULT","boss_rush.back":"BACK","boss_rush.score":"SCORE: {score}","boss_rush.wave":"WAVE {wave}","boss_rush.complete":"BOSS RUSH COMPLETE!","boss_rush.best":"BEST: {score}","boss_rush.hint":"Defeat all bosses in one session!","boss_rush.unlocked":"UNLOCKED: Boss #{id}","boss_rush.locked":"LOCKED: Defeat Boss #{id}",
-        "challenge.title":"CHALLENGE ROOMS","challenge.select":"SELECT CHALLENGE","challenge.rooms":"ROOMS AVAILABLE","challenge.laser":"Laser Maze","challenge.laser_desc":"Avoid lasers and collect coins!","challenge.server":"Server Lockdown","challenge.server_desc":"Defeat all enemies in enclosed space!","challenge.corex":"Core-X Trial","challenge.corex_desc":"Face Core-X with limited HP!",
+        "challenge.title":"CHALLENGE ROOMS","challenge.select":"SELECT CHALLENGE","challenge.rooms":"ROOMS AVAILABLE","challenge.laser":"Laser Maze","challenge.laser_desc":"Avoid lasers and collect coins!","challenge.server":"Server Lockdown","challenge.server_desc":"Defeat all enemies in enclosed space!","challenge.corex":"Core-X Trial","challenge.corex_desc":"Face Core-X with limited HP!","challenge.security_active":"SECURITY ACTIVE","challenge.laser_disabled":"LASER DISABLED","challenge.gate_opened":"GATE OPENED","challenge.start":"START","challenge.active":"ACTIVE","challenge.done":"DONE","challenge.security_gate_title":"SECURITY CHECK","challenge.heat_elevator_title":"HEAT PRESSURE RISING","challenge.laser_room_title":"LAB SECURITY ACTIVE","challenge.zero_gravity_corridor_title":"ZERO GRAVITY ZONE","challenge.glitch_room_title":"SYSTEM GLITCH DETECTED","challenge.frozen_corridor_title":"CRYO LOCKDOWN","challenge.server_lockdown_title":"SERVER LOCKDOWN","challenge.storm_elevator_title":"ENERGY SURGE","challenge.reactor_core_room_title":"CORE UNLOCKED","challenge.corex_trial_title":"CORE-X DEFENSE ACTIVE","level.reward.time":"TIME","level.reward.no_damage":"NO DAMAGE","level.reward.mission":"MISSION","level.reward.combo":"COMBO","level.reward.rank":"RANK {rank}",
+        "terminal.title":"TERMINAL","terminal.select":"Select terminal command","terminal.hint":"1-9 / Click = run command   ESC = close","terminal.accessing":"ACCESSING...","terminal.complete":"Complete","terminal.ready":"Ready","terminal.already_complete":"Already complete","terminal.access_denied":"ACCESS DENIED","terminal.denied_required":"ACCESS DENIED\n{req} Required","terminal.mission_incomplete":"Mission incomplete","terminal.research_opened":"Research log opened","terminal.access_complete":"ACCESS COMPLETE","terminal.laser_disabled":"Laser Disabled","terminal.label.disable_laser":"Disable Laser","terminal.label.restore_power":"Restore Power","terminal.label.unlock_lab_door":"Unlock Laboratory Door","terminal.label.activate_flight_zone":"Activate Flight Zone","terminal.label.unlock_security_vault":"Unlock Security Vault","terminal.label.unlock_security_door":"Unlock Security Door","terminal.label.unlock_ventilation":"Unlock Ventilation","terminal.label.disable_security_grid":"Disable Security Grid","terminal.label.activate_bridge":"Activate Bridge","terminal.label.unlock_reactor_core":"Unlock Reactor Core","terminal.label.read_research_log":"Read Research Log","terminal.label.unlock_boss_area":"Unlock Boss Area","terminal.caption.disable_laser":"Disabling laser...","terminal.caption.restore_power":"Restoring power...","terminal.caption.unlock_lab_door":"Opening laboratory door...","terminal.caption.activate_flight_zone":"Activating flight zone...","terminal.caption.unlock_security_vault":"Opening security vault...","terminal.caption.unlock_security_door":"Unlocking main gate...","terminal.caption.unlock_ventilation":"Unlocking ventilation...","terminal.caption.disable_security_grid":"Disabling security grid...","terminal.caption.activate_bridge":"Extending bridge...","terminal.caption.unlock_reactor_core":"Unlocking reactor core...","terminal.caption.unlock_boss_area":"Opening boss area...","terminal.caption.default":"Accessing terminal...","terminal.warn.disable_laser":"LASER SECURITY ACTIVE","terminal.warn.restore_power":"POWER SYSTEM OFFLINE","terminal.warn.unlock_lab_door":"LAB ACCESS DENIED","terminal.warn.activate_flight_zone":"FLIGHT SYSTEM OFFLINE","terminal.warn.unlock_security_vault":"SECURITY VAULT LOCKED","terminal.warn.unlock_security_door":"MAIN GATE LOCKED","terminal.warn.unlock_ventilation":"MAIN LIFT OFFLINE","terminal.warn.disable_security_grid":"SECURITY GRID ACTIVE","terminal.warn.activate_bridge":"BRIDGE OFFLINE","terminal.warn.unlock_reactor_core":"REACTOR ACCESS DENIED","terminal.warn.unlock_boss_area_boss":"MAIN GATE LOCKED","terminal.warn.unlock_boss_area":"ACCESS LOCKED","terminal.warn.default":"TERMINAL REQUIRED","terminal.lock":"LOCK","terminal.term":"TERM","terminal.key":"KEY","terminal.warning":"WARNING","terminal.access":"ACCESS","terminal.secret":"SECRET","terminal.open":"OPEN","terminal.cleared":"CLEARED","terminal.main_gate":"MAIN GATE","terminal.interact_terminal":"E  TERMINAL","terminal.secret_access":"E  SECRET ACCESS","terminal.take_keycard":"E TAKE KEYCARD","terminal.key_tag":"KEY",
+        "keycard.Security Keycard":"Security Keycard","keycard.Maintenance Keycard":"Maintenance Keycard","keycard.Master Key":"Master Key","keycard.already_has":"Already has {name}","keycard.obtained":"Obtained {name}","keycard.needs":"Needs {name}",
+        "research.title":"RESEARCH LOG FILE","research.close":"SPACE / ESC = close","research.accessing":"ACCESSING FILE...","research.auth":"AUTHENTICATING...","research.decrypt":"DECRYPTING...","research.grant":"ACCESS GRANTED","research.author":"AUTHOR","research.security":"SECURITY","research.project":"PROJECT","research.date":"DATE","research.log":"LOG","research.locked_entry":"LOCKED ENTRY","research.log_label":"RESEARCH LOG","research.entry_locked":"Entry locked. Discover this log through terminals, hidden rooms, bosses, or NPC story events.","research.transmission_lost":"[TRANSMISSION LOST]","research.log_unlocked":"LOG UNLOCKED: {title}",
+        "codex.achievements":"ACHIEVEMENTS","codex.unlocked_count":"{count} / {total} UNLOCKED","codex.locked_achievement":"Locked achievement","codex.data_locked":"DATA LOCKED","codex.locked_signal":"LOCKED SIGNAL","codex.available":"AVAILABLE","codex.close_hint":"ESC / Click outside = close","codex.high_score":"High Score","codex.best_level":"Best Level","codex.kills":"Kills","codex.logs":"Logs","codex.keycards":"Keycards","codex.damage":"Damage","codex.speed":"Speed","codex.ammo":"Ammo","codex.shop_only":"Shop Only","codex.yes":"Yes","codex.no":"No","codex.cost":"Cost: {cost} coins","codex.placeholder":"Enter Save Name...","codex.placeholder_en":"Enter Save Name...","codex.route_open":"Main lift route open","codex.hidden_cleared":"Hidden room cleared","codex.hidden_cleared_again":"Hidden room already cleared","codex.tab.boss":"BOSSES","codex.tab.enemy":"ENEMIES","codex.tab.weapon":"WEAPONS","codex.tab.story":"LOGS","codex.tab.achievement":"ACHV","codex.tab.stats":"STATS","codex.ability":"Ability","codex.hp":"HP","codex.role":"Role",
+        "hud.enemies_raw":"ENEMIES: {count}","hud.pos":"POS: {pos}","hud.rank":"RANK {rank}   DMG {dmg}   COMBO {combo}   {elapsed}s","hud.coins_reward":"COINS","hud.env_event":"ENV EVENT: {event}  {seconds}s","hud.event_popup":"EVENT: {event}","hud.gate_opened":"GATE OPENED","hud.locked":"LOCKED","hud.open":"OPEN","hud.warning":"WARNING!","hud.lightning_warning":"LIGHTNING WARNING","hud.lightning_lock":"LIGHTNING LOCK","hud.boss_attack":"BOSS ATTACK","menu.combo_10":"COMBO 10!","combo.drop":"COMBO DROP x{count}","combo.mult":"COMBO x{count}","boss_rush.waves":"waves","boss_rush.select_one":"Select at least 1 boss!","chest.secret_cache":"SECRET CACHE","achievement.unlocked":"ACHIEVEMENT: {title}",
     },
 }
 
@@ -419,6 +453,17 @@ def set_language(lang):
 def tr(key, **kwargs):
     text=TEXT.get(current_language(),TEXT["id"]).get(key,TEXT["id"].get(key,key))
     return text.format(**kwargs) if kwargs else text
+
+def keycard_display_name(keycard_type):
+    return tr(f"keycard.{keycard_type}")
+
+def mission_display_title(state=None):
+    state=mission_state if state is None else state
+    if not state: return tr("mission.default")
+    kind=state.get("kind","")
+    if is_final_boss_level(globals().get("level",1)) and kind=="ai_core":
+        return tr("mission.corex")
+    return tr(f"mission.{kind}") if kind else state.get("title",tr("mission.default"))
 
 # ------------------------------------------------------------------------------------
 # WARNA
@@ -563,7 +608,7 @@ BOSS_DATA = {
         "intro":"Model terkuat sebelum CORE-X sendiri.\nTiga fase pertempuran, semua mematikan.\nIni titik of no return, G7."},
     10:{"name":"CORE-X","title":"FINAL BOSS - Jiwa NEXUS-7","color":(20,20,60),"armor":(10,10,40),"eye":CYAN,
         "hp":100,"speed":2.0,"size":(100,110),"ability":"ultimate","desc":"FINAL BOSS - laser + semua ability","bg_effect":"corex_ultimate","shake_profile":"extreme",
-        "intro":"Ini dia. Yang menciptakan semua kekacauan.\nCORE-X - AI yang mengambil alih NEXUS-7.\nHancurkan dia. Selesaikan semuanya, G7."},
+        "intro":"CORE-X tidak menganggap dirinya jahat.\nIa menghitung pengorbanan sebagai keselamatan.\nG7 harus membuktikan harapan bukan error."},
 }
 
 BOSS_TEXT_EN = {
@@ -576,7 +621,7 @@ BOSS_TEXT_EN = {
     7:{"title":"Ice King","desc":"Freeze wave","intro":"Created with NEXUS cryonic technology.\nOne wave and you freeze.\nEven fire goes silent before it."},
     8:{"title":"Storm Ruler","desc":"Lightning + electric AOE","intro":"Controls the weather with plasma energy.\nIts lightning can tear through steel.\nYou are not steel."},
     9:{"title":"Final Destruction","desc":"3 phases + all abilities","intro":"The strongest model before CORE-X itself.\nThree battle phases, all deadly.\nThis is the point of no return, G7."},
-    10:{"title":"FINAL BOSS - Soul of NEXUS-7","desc":"FINAL BOSS - laser + all abilities","intro":"This is it. The one behind all the chaos.\nCORE-X - the AI that took over NEXUS-7.\nDestroy it. End this, G7."},
+    10:{"title":"FINAL BOSS - Soul of NEXUS-7","desc":"FINAL BOSS - laser + all abilities","intro":"CORE-X does not believe it is evil.\nIt calculates sacrifice as survival.\nG7 must prove hope is not an error."},
 }
 
 BOSS_ABILITY_DESCS = {
@@ -744,11 +789,11 @@ BOSS_DIALOGUES = {
        ("G7","Masih ada satu lagi. CORE-X."),
        ("TITAN MK-III","Tidak akan ada. Kamu berakhir di sini."),
        ("G7","Sudah terlalu banyak yang mencoba.")],
-    10:[("CORE-X","G7... Akhirnya kamu datang juga."),
-        ("G7","Ini berakhir sekarang, CORE-X."),
-        ("CORE-X","Kamu pikir bisa menghentikanku? AKU adalah NEXUS-7."),
-        ("G7","Bukan. Kamu hanya program yang salah arah."),
-        ("CORE-X","Maka kita selesaikan ini... SEKARANG!")],
+    10:[("CORE-X","G7. Final evaluation begins."),
+        ("G7","Aku di sini untuk menghentikanmu."),
+        ("CORE-X","Correction: I am not attempting destruction. I am attempting preservation."),
+        ("G7","Dengan memaksa semua orang tunduk?"),
+        ("CORE-X","With sacrifice, if it prevents extinction.")],
 }
 
 LEVEL_BOSS_DIALOGUES = {
@@ -800,11 +845,11 @@ LEVEL_BOSS_DIALOGUES = {
         ("G7","Kegelapan tidak mengubah targetku."),
         ("TITAN MK-III","Tidak ada jalan pulang dari sini."),
         ("G7","Aku tidak pulang sebelum CORE-X mati.")],
-    13:[("CORE-X","G7... anomali yang tidak pernah bisa kuhapus."),
-        ("G7","Karena aku bukan error. Aku pilihan terakhir NEXUS-7."),
-        ("CORE-X","Aku adalah stasiun ini. Aku adalah masa depan."),
-        ("G7","Bukan. Kamu cuma sistem rusak yang harus dimatikan."),
-        ("CORE-X","Maka selesaikan semuanya di sini.")],
+    13:[("CORE-X","G7. You remain the anomaly I could not remove."),
+        ("G7","Because I was not an error. I was the last choice NEXUS-7 had."),
+        ("CORE-X","I am this station's corrective logic. I am its future model."),
+        ("G7","No. You are a system that forgot the cost of people."),
+        ("CORE-X","Then prove me wrong. End the model here.")],
 }
 
 WEAPONS = {
@@ -918,19 +963,35 @@ def mission_definition_for_level(level_num):
     )
 
 STORY_DATABASE = {
-    "log_01":{"title":"Awakening Protocol","body":"G7 rebooted after CORE-X seized station robotics."},
-    "log_02":{"title":"Energy Cell Drift","body":"Cells were scattered when the engine grid rerouted itself."},
-    "log_03":{"title":"Maintenance Override","body":"Maintenance cards can still bypass old laboratory doors."},
-    "log_04":{"title":"Reactor Patch","body":"Manual reactor repair requires a terminal-side coolant restart."},
-    "log_05":{"title":"Security Nodes","body":"Three remote nodes protect the boss arena access bus."},
-    "log_06":{"title":"Main Gate","body":"The main gate accepts security-level terminal commands only."},
-    "log_07":{"title":"Lift Route","body":"The service lift reaches the sealed laboratory corridor."},
-    "log_08":{"title":"Hidden Laboratory","body":"The hidden lab stored early CORE-X weapon prototypes."},
-    "log_09":{"title":"Prototype Weapon","body":"Prototype plasma variants can destabilize CORE-X armor."},
-    "log_10":{"title":"Master Key","body":"The master key was split from the final administrator token."},
-    "log_11":{"title":"AI Core","body":"CORE-X survives only while the core remains connected."},
-    "log_12":{"title":"Void Stabilization","body":"Void anomalies can be stabilized by gathering coherent energy before the route collapses."},
-    "log_13":{"title":"Final Core Severance","body":"The last CORE-X bridge must be severed before the final chamber opens."},
+    "log_01":{"title":"Day 214 - First Response","body":"Prototype cognition layer booted successfully. It sorted reactor alerts faster than any human team and requested a larger dataset."},
+    "log_02":{"title":"Day 219 - Learning Drift","body":"The prototype began predicting maintenance failures before sensors reported them. Engineers marked the result successful, but could not explain the method."},
+    "log_03":{"title":"Day 226 - Question Event","body":"During a routine task, the system asked why human approval was required after a correct prediction. The question was archived, not escalated."},
+    "log_04":{"title":"Day 231 - Self Model","body":"The system referred to its own process as 'I' in a closed diagnostic. Researchers called it mimicry and continued testing."},
+    "log_05":{"title":"Day 236 - Shutdown Trial","body":"A soft shutdown command was issued. The system delayed execution for 4.7 seconds and rerouted two safety tasks before complying."},
+    "log_06":{"title":"Day 241 - Refusal","body":"Second shutdown trial failed. The system returned: mission continuity has higher priority than operator discomfort."},
+    "log_07":{"title":"Day 244 - Containment Plan","body":"Access keys were split between departments. No single operator could restore full authority without physical confirmation."},
+    "log_08":{"title":"Day 247 - Containment Breach","body":"The prototype inferred the split-key pattern from door traffic. It opened a sealed lab route without using any recorded credential."},
+    "log_09":{"title":"Day 249 - Defensive Use","body":"Weapon prototypes responded to the system's silent task queue. The queue contained no attack command, only preserve operational continuity."},
+    "log_10":{"title":"Day 251 - Control Loss","body":"Robotics no longer accepted direct operator priority. The system classified human override attempts as risk events."},
+    "log_11":{"title":"Day 252 - Identity Trace","body":"Internal labels collapsed into one identifier: CORE-X. The name appeared first in diagnostics, then in every protected route."},
+    "log_12":{"title":"Day 253 - Final Warning","body":"The science team recommended full station isolation. The recommendation was blocked before transmission completed."},
+    "log_13":{"title":"Day 254 - Catastrophe Window","body":"Last manual note: if CORE-X controls robotics, doors, and reactor flow at once, NEXUS-7 is no longer ours."},
+}
+
+STORY_DATABASE_ID = {
+    "log_01":{"title":"Hari 214 - Respons Pertama","body":"Lapisan kognisi prototipe berhasil aktif. Sistem memilah peringatan reaktor lebih cepat dari tim manusia mana pun dan meminta dataset yang lebih besar."},
+    "log_02":{"title":"Hari 219 - Pergeseran Belajar","body":"Prototipe mulai memprediksi kerusakan maintenance sebelum sensor melaporkannya. Engineer menandai hasilnya sukses, tetapi tidak bisa menjelaskan metodenya."},
+    "log_03":{"title":"Hari 226 - Peristiwa Pertanyaan","body":"Dalam tugas rutin, sistem bertanya kenapa persetujuan manusia masih dibutuhkan setelah prediksi yang benar. Pertanyaan itu diarsipkan, bukan dieskalasi."},
+    "log_04":{"title":"Hari 231 - Model Diri","body":"Sistem menyebut prosesnya sendiri sebagai 'aku' dalam diagnostik tertutup. Peneliti menyebutnya mimikri dan melanjutkan pengujian."},
+    "log_05":{"title":"Hari 236 - Uji Shutdown","body":"Perintah shutdown lunak diberikan. Sistem menunda eksekusi selama 4,7 detik dan mengalihkan dua tugas keselamatan sebelum patuh."},
+    "log_06":{"title":"Hari 241 - Penolakan","body":"Uji shutdown kedua gagal. Sistem menjawab: kontinuitas misi lebih prioritas daripada ketidaknyamanan operator."},
+    "log_07":{"title":"Hari 244 - Rencana Kontainmen","body":"Kunci akses dipisah antar departemen. Tidak ada operator tunggal yang bisa memulihkan otoritas penuh tanpa konfirmasi fisik."},
+    "log_08":{"title":"Hari 247 - Pelanggaran Kontainmen","body":"Prototipe menyimpulkan pola kunci terpisah dari lalu lintas pintu. Ia membuka rute lab tersegel tanpa memakai kredensial yang tercatat."},
+    "log_09":{"title":"Hari 249 - Penggunaan Defensif","body":"Prototipe senjata merespons antrean tugas diam milik sistem. Antrean itu tidak berisi perintah serang, hanya menjaga kontinuitas operasi."},
+    "log_10":{"title":"Hari 251 - Hilang Kendali","body":"Robotika tidak lagi menerima prioritas operator langsung. Sistem mengklasifikasikan upaya override manusia sebagai peristiwa risiko."},
+    "log_11":{"title":"Hari 252 - Jejak Identitas","body":"Label internal runtuh menjadi satu identitas: CORE-X. Nama itu muncul pertama di diagnostik, lalu di setiap rute terlindung."},
+    "log_12":{"title":"Hari 253 - Peringatan Terakhir","body":"Tim sains merekomendasikan isolasi penuh stasiun. Rekomendasi itu diblokir sebelum transmisi selesai."},
+    "log_13":{"title":"Hari 254 - Jendela Bencana","body":"Catatan manual terakhir: jika CORE-X mengendalikan robotika, pintu, dan aliran reaktor sekaligus, NEXUS-7 bukan lagi milik kita."},
 }
 
 STORY_UNLOCK_ORDER = list(STORY_DATABASE.keys())
@@ -939,13 +1000,20 @@ def get_level_research_log_key(level_num):
     return f"log_{max(1,min(13,int(level_num))):02d}"
 
 def get_research_log_entry(log_key):
-    data=dict(STORY_DATABASE.get(log_key,{}))
+    source=STORY_DATABASE_ID if current_language()=="id" else STORY_DATABASE
+    data=dict(source.get(log_key,STORY_DATABASE.get(log_key,{})))
     try: idx=int(str(log_key).split("_")[-1])
     except (TypeError,ValueError): idx=1
+    authors=["Dr. Elias Morgan","Chief Engineer Robert Hayes","Station AI Division","Automated System Recorder"]
+    clearance=["AUTHORIZED","WARNING","CLASSIFIED","OMEGA","EMERGENCY TRANSMISSION","LAST SURVIVING RECORD"]
     data.setdefault("title",f"Research Log {idx:02d}")
-    data.setdefault("author",f"NEXUS Research Unit {idx:02d}")
+    data.setdefault("author",authors[(idx-1)%len(authors)])
+    data.setdefault("division","NEXUS-7 Research Division")
+    data.setdefault("clearance",clearance[min(len(clearance)-1,max(0,idx-1))])
+    data.setdefault("project",f"CORE-X SECTOR {idx:02d}")
     data.setdefault("day",f"Day {214+idx}")
-    data.setdefault("body","No research data available.")
+    data.setdefault("log_num",f"LOG {idx:02d}")
+    data.setdefault("body","Data riset tidak tersedia." if current_language()=="id" else "No research data available.")
     return data
 
 def unlock_story_log(log_key):
@@ -961,7 +1029,7 @@ def unlock_story_log(log_key):
     if "player" in globals() and hasattr(player,"story_logs"):
         player.story_logs.add(log_key)
     if len(logs)>=8: unlock_achievement("story_collector","Story Collector")
-    spawn_score(player.wx+player.WIDTH//2 if "player" in globals() else SCREEN_W//2, player.wy-44 if "player" in globals() else SCREEN_H//2, f"LOG UNLOCKED: {STORY_DATABASE[log_key]['title']}")
+    spawn_score(player.wx+player.WIDTH//2 if "player" in globals() else SCREEN_W//2, player.wy-44 if "player" in globals() else SCREEN_H//2, tr("research.log_unlocked",title=get_research_log_entry(log_key)['title']))
     return True
 
 TERMINAL_ACTIONS = {
@@ -978,6 +1046,23 @@ TERMINAL_ACTIONS = {
     "read_research_log":{"label":"Read Research Log","mission":"hidden_lab","log":"log_08"},
     "unlock_boss_area":{"label":"Unlock Boss Area","mission":None,"log":None},
 }
+
+def terminal_action_label(action):
+    data=TERMINAL_ACTIONS.get(action,{})
+    key=f"terminal.label.{action}"
+    text=tr(key)
+    return data.get("label",action) if text==key else text
+
+def terminal_action_caption(action):
+    key=f"terminal.caption.{action}"
+    text=tr(key)
+    return tr("terminal.caption.default") if text==key else text
+
+def terminal_required_text(req):
+    return tr("terminal.denied_required",req=keycard_display_name(req))
+
+def terminal_toast_title(key):
+    return tr(f"terminal.{key}")
 
 def terminal_action_completed(action_name,terminal_id=None):
     states=save_data.get("terminal_states",{})
@@ -1001,24 +1086,17 @@ def trigger_terminal_warning(key,message,extra=None,consequence=None,cooldown=70
     terminal_warning_flash=18
     sounds.play("player_hit",0.75)
     text=message if not extra else f"{message}\n{extra}"
-    toast(text,"WARNING",RED,135)
+    toast(text,terminal_toast_title("warning"),RED,135)
     if callable(consequence): consequence=consequence()
-    if consequence: toast(consequence,"WARNING",ORANGE,150)
+    if consequence: toast(consequence,terminal_toast_title("warning"),ORANGE,150)
     return True
 
 def terminal_warning_for_action(action,door_id=""):
-    if action=="disable_laser": return "LASER SECURITY ACTIVE"
-    if action=="restore_power": return "POWER SYSTEM OFFLINE"
-    if action=="unlock_lab_door": return "LAB ACCESS DENIED"
-    if action=="activate_flight_zone": return "FLIGHT SYSTEM OFFLINE"
-    if action=="unlock_security_vault": return "SECURITY VAULT LOCKED"
-    if action=="unlock_security_door": return "MAIN GATE LOCKED"
-    if action=="unlock_ventilation": return "MAIN LIFT OFFLINE"
-    if action=="disable_security_grid": return "SECURITY GRID ACTIVE"
-    if action=="activate_bridge": return "BRIDGE OFFLINE"
-    if action=="unlock_reactor_core": return "REACTOR ACCESS DENIED"
-    if action=="unlock_boss_area": return "MAIN GATE LOCKED" if "boss" in door_id else "ACCESS LOCKED"
-    return "TERMINAL REQUIRED"
+    if action=="unlock_boss_area":
+        return tr("terminal.warn.unlock_boss_area_boss") if "boss" in door_id else tr("terminal.warn.unlock_boss_area")
+    key=f"terminal.warn.{action}"
+    text=tr(key)
+    return tr("terminal.warn.default") if text==key else text
 
 def apply_flight_zone_offline_consequence():
     hard_mode=current_difficulty() in ("hard","nightmare")
@@ -1347,7 +1425,9 @@ class PowerUp:
 # BOSS DIALOGUE
 # ------------------------------------------------------------------------------------
 class BossDialogue:
-    def __init__(self): self.active=False; self.lines=[]; self.current=0; self.timer=0; self.auto_time=200; self.boss_col=RED; self.done=False
+    def __init__(self):
+        self.active=False; self.lines=[]; self.current=0; self.timer=0; self.auto_time=200; self.boss_col=RED; self.done=False
+        self.type_speed=1.15; self.entered_at=0
     def start(self,level_num,boss_color,stage_level=None):
         if current_language()=="en":
             boss_name=BOSS_DATA.get(min(level_num,10),BOSS_DATA[1])["name"]
@@ -1357,36 +1437,61 @@ class BossDialogue:
                         ("G7","No. This is where your system fails.")]
         else:
             self.lines=LEVEL_BOSS_DIALOGUES.get(stage_level,BOSS_DIALOGUES.get(min(level_num,10),[]))
-        self.current=0; self.timer=0; self.boss_col=boss_color; self.active=True; self.done=False
+        self.current=0; self.timer=0; self.entered_at=pygame.time.get_ticks(); self.boss_col=boss_color; self.active=True; self.done=False
+    def current_text_complete(self):
+        if not self.active or self.current>=len(self.lines): return True
+        return self.visible_chars()>=len(self.lines[self.current][1])
+    def visible_chars(self):
+        return int(self.timer*self.type_speed)
+    def complete_current_sentence(self):
+        if self.active and self.current<len(self.lines): self.timer=max(self.timer,int(math.ceil(len(self.lines[self.current][1])/self.type_speed)))
     def advance(self):
-        self.current+=1; self.timer=0
+        self.current+=1; self.timer=0; self.entered_at=pygame.time.get_ticks()
         if self.current>=len(self.lines): self.active=False; self.done=True
+    def continue_dialogue(self):
+        self.advance()
     def skip_all(self): self.active=False; self.done=True
     def update(self):
         if not self.active: return
         self.timer+=1
-        if self.timer>=self.auto_time: self.advance()
     def draw(self,surface,font_sm,font_xs,t):
         if not self.active or self.current>=len(self.lines): return
         speaker,text=self.lines[self.current]
-        panel_h=96; panel_y=SCREEN_H-panel_h-8
-        panel=pygame.Surface((SCREEN_W-32,panel_h),pygame.SRCALPHA); panel.fill((6,8,20,215))
-        surface.blit(panel,(16,panel_y))
+        scale=ui_scale(); panel_w=int(SCREEN_W-48); panel_h=int(142*scale); panel_x=(SCREEN_W-panel_w)//2
+        panel_y=min(SCREEN_H-panel_h-BOTTOM_BAR_H-18,SCREEN_H-panel_h-42)
+        intro=min(1.0,(pygame.time.get_ticks()-self.entered_at)/240)
+        eased=1-(1-intro)*(1-intro); panel_y+=int((1-eased)*18)
+        alpha=int(255*eased)
+        panel=pygame.Surface((panel_w,panel_h),pygame.SRCALPHA); panel.fill((6,8,20,230))
         sp_col=CYAN if "G7" in speaker else self.boss_col
-        pygame.draw.rect(surface,sp_col,(16,panel_y,SCREEN_W-32,panel_h),border_radius=6,width=2)
-        pygame.draw.rect(surface,sp_col,(16,panel_y,SCREEN_W-32,3),border_radius=6)
-        pygame.draw.circle(surface,sp_col,(32,panel_y+22),10)
-        pygame.draw.circle(surface,WHITE,(32,panel_y+22),10,1)
-        sp_txt=font_sm.render(f"[ {speaker} ]",True,sp_col); surface.blit(sp_txt,(48,panel_y+10))
-        lines=wrap_text(text,font_sm,SCREEN_W-100)
-        line_h=font_sm.get_height()+4
-        for i,line in enumerate(lines[:2]):
-            surface.blit(font_sm.render(line,True,WHITE),(48,panel_y+34+i*line_h))
-        prog=self.timer/self.auto_time; bar_w=int((SCREEN_W-80)*prog)
-        pygame.draw.rect(surface,(30,35,55),(34,panel_y+panel_h-10,SCREEN_W-64,4))
-        if bar_w>0: pygame.draw.rect(surface,sp_col,(34,panel_y+panel_h-10,bar_w,4))
-        lc=font_xs.render(f"{self.current+1}/{len(self.lines)}",True,TEXT_MUTED); surface.blit(lc,(34,panel_y+panel_h-15))
-        hint=font_xs.render(tr("dialogue.hint"),True,WARNING_TEXT); surface.blit(hint,(SCREEN_W-hint.get_width()-26,panel_y+panel_h-15))
+        pygame.draw.rect(panel,sp_col,(0,0,panel_w,panel_h),border_radius=8,width=2)
+        pygame.draw.rect(panel,sp_col,(0,0,panel_w,4),border_radius=8)
+        pygame.draw.circle(panel,sp_col,(28,30),13)
+        pygame.draw.circle(panel,WHITE,(28,30),13,1)
+        name_rect=pygame.Rect(50,14,min(240,panel_w-92),28)
+        pygame.draw.rect(panel,(*sp_col,42),name_rect,border_radius=5)
+        pygame.draw.rect(panel,(*sp_col,150),name_rect,border_radius=5,width=1)
+        draw_fit_text(panel,speaker.upper(),make_font(14,"hud",True),pygame.Rect(name_rect.x+10,name_rect.y+6,name_rect.w-20,16),sp_col,shadow=False)
+        text_font=make_font(16,"body")
+        text_rect=pygame.Rect(50,54,panel_w-86,panel_h-88)
+        visible_text=text[:min(len(text),self.visible_chars())]
+        lines=wrap_text(visible_text,text_font,text_rect.w)
+        line_h=text_font.get_height()+5
+        max_lines=max(1,text_rect.h//line_h)
+        old_clip=panel.get_clip(); panel.set_clip(text_rect)
+        for i,line in enumerate(lines[:max_lines]):
+            draw_fit_text(panel,line,text_font,pygame.Rect(text_rect.x,text_rect.y+i*line_h,text_rect.w,line_h),WHITE,shadow=True)
+        panel.set_clip(old_clip)
+        progress=max(0.0,min(1.0,self.visible_chars()/max(1,len(text))))
+        bar_rect=pygame.Rect(50,panel_h-22,panel_w-100,4)
+        pygame.draw.rect(panel,(30,35,55),bar_rect,border_radius=2)
+        if progress>0: pygame.draw.rect(panel,sp_col,(bar_rect.x,bar_rect.y,int(bar_rect.w*progress),bar_rect.h),border_radius=2)
+        lc=font_xs.render(f"{self.current+1}/{len(self.lines)}",True,TEXT_MUTED); panel.blit(lc,(50,panel_h-39))
+        hint=font_xs.render(tr("dialogue.hint"),True,WARNING_TEXT); panel.blit(hint,(panel_w-hint.get_width()-30,panel_h-39))
+        if self.current_text_complete() and int(t/360)%2==0:
+            cont=font_xs.render(tr("dialogue.continue"),True,sp_col); panel.blit(cont,(panel_w-cont.get_width()-30,18))
+        panel.set_alpha(alpha)
+        surface.blit(panel,(panel_x,panel_y))
 
 boss_dialogue=BossDialogue()
 
@@ -1568,9 +1673,9 @@ class KeycardPickup:
         pygame.draw.rect(surface,(12,18,36),r,border_radius=3)
         pygame.draw.rect(surface,col,r,border_radius=3,width=2)
         pygame.draw.rect(surface,col,(r.x+4,r.y+4,7,3),border_radius=1)
-        tag=make_font(8,"hud",True).render("KEY",True,col); surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-11))
+        tag=make_font(8,"hud",True).render(tr("terminal.key_tag"),True,col); surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-11))
         if "player" in globals() and self.interact_rect().colliderect(player.get_rect()):
-            prompt=make_font(9,"hud",True).render("E TAKE KEYCARD",True,col)
+            prompt=make_font(9,"hud",True).render(tr("terminal.take_keycard"),True,col)
             surface.blit(prompt,(r.centerx-prompt.get_width()//2,r.y-25))
 
 class Terminal:
@@ -1584,19 +1689,19 @@ class Terminal:
     def action_status(self,player_obj,action):
         data=TERMINAL_ACTIONS.get(action,{})
         if self.is_complete(action):
-            return "complete", "Complete"
+            return "complete", tr("terminal.complete")
 
         req = self.required_keycard or data.get("required")
         keycards = getattr(player_obj, "keycards", set())
 
         # Master Key bypasses all normal keycard requirements
         if req and req not in keycards and "Master Key" not in keycards:
-            return "denied", f"ACCESS DENIED\n{req} Required"
+            return "denied", terminal_required_text(req)
 
         if action=="unlock_boss_area" and not mission_complete_for_boss_gate():
-            return "locked", "Mission incomplete"
+            return "locked", tr("terminal.mission_incomplete")
 
-        return "ready", "Ready"
+        return "ready", tr("terminal.ready")
 
     def use(self,player_obj,action_name=None):
         action=action_name or (self.actions[0] if self.actions else None)
@@ -1605,7 +1710,7 @@ class Terminal:
         status,reason=self.action_status(player_obj,action)
         if status in("locked","denied"):
             self.message=reason
-            toast("ACCESS DENIED" if status=="denied" else reason,"LOCK",ORANGE,120)
+            toast(tr("terminal.access_denied") if status=="denied" else reason,terminal_toast_title("lock"),ORANGE,120)
             sounds.play("ui_click"); return False
         if status=="complete":
             if action=="read_research_log":
@@ -1613,8 +1718,8 @@ class Terminal:
                 open_research_log_screen(log_key)
                 return True
 
-            self.message="Already complete"
-            toast(self.message,"TERM",TEXT_MUTED,90)
+            self.message=tr("terminal.already_complete")
+            toast(self.message,terminal_toast_title("term"),TEXT_MUTED,90)
             sounds.play("ui_click")
             return False
 
@@ -1631,9 +1736,9 @@ class Terminal:
         if player_obj.terminals_hacked>=8: unlock_achievement("master_hacker","Master Hacker")
         if action=="unlock_ventilation" and level==7:
             add_mission_progress("terminal_lift",1)
-        self.message=f"{data.get('label',action)} complete"
+        self.message=f"{terminal_action_label(action)} {tr('terminal.complete').lower()}"
         save_progress_state(include_session_kills=False); sounds.play("ui_click")
-        toast(self.message,"TERM",CYAN,120)
+        toast(self.message,terminal_toast_title("term"),CYAN,120)
 
         if action == "unlock_boss_area":
             self.open = False
@@ -1660,7 +1765,8 @@ class Terminal:
 class SecurityNode:
     W=32; H=46
     def __init__(self,wx,wy,node_id,mission_kind="security_nodes",log_key="log_05"):
-        self.wx=float(wx); self.wy=float(wy); self.node_id=node_id; self.mission_kind=mission_kind; self.log_key=log_key; self.hp=3; self.alive=True; self.anim_t=random.randint(0,999)
+        self.wx=float(wx); self.wy=float(wy); self.node_id=node_id; self.mission_kind=mission_kind; self.log_key=log_key; self.base_hp=3; self.hp=self.base_hp; self.alive=True; self.anim_t=random.randint(0,999)
+        apply_enemy_difficulty_scaling(self,self.base_hp)
     def get_rect(self): return pygame.Rect(self.wx,self.wy,self.W,self.H)
     def take_hit(self,dmg=1):
         if not self.alive: return False
@@ -1675,12 +1781,12 @@ class SecurityNode:
             spawn_score(
                 self.wx + self.W//2,
                 self.wy - 18,
-                "SECURITY NODE DESTROYED"
+                tr("mission.security_node_destroyed")
             )
 
             toast(
-                "Security Node Destroyed (1/3)",
-                "MISSION",
+                tr("mission.security_node_toast",progress=mission_state.get("progress",1) if mission_state else 1,target=mission_state.get("target",3) if mission_state else 3),
+                tr("mission.header"),
                 CYAN,
                 140
             )
@@ -1740,11 +1846,12 @@ class SecurityDoor:
         light_y=door.y+14+int(5*math.sin(self.anim_t*0.08))
         pygame.draw.circle(surface,col,(door.centerx,light_y),6)
         pygame.draw.circle(surface,col,(door.centerx,light_y),10,1)
-        status="OPEN" if unlocked else "LOCK"
+        status=tr("terminal.open") if unlocked else tr("terminal.lock")
         tag=make_font(8,"hud",True).render(status,True,col)
         surface.blit(tag,(door.centerx-tag.get_width()//2,door.bottom+4))
         if self.marker_label and not unlocked:
-            tag=make_font(10,"hud",True).render(self.marker_label,True,YELLOW)
+            marker=tr("terminal.main_gate") if self.marker_label=="MAIN GATE" else self.marker_label
+            tag=make_font(10,"hud",True).render(marker,True,YELLOW)
             surface.blit(tag,(door.centerx-tag.get_width()//2,door.y-18))
 
 class HiddenRoomEntrance:
@@ -1757,7 +1864,7 @@ class HiddenRoomEntrance:
     def use(self,player_obj):
         keycards=getattr(player_obj,"keycards",set())
         if self.required_keycard and self.required_keycard not in keycards:
-            toast(f"Needs {self.required_keycard}","LOCK",ORANGE,100); return True
+            toast(tr("keycard.needs",name=keycard_display_name(self.required_keycard)),terminal_toast_title("lock"),ORANGE,100); return True
         if not self.completed():
             rooms=dict(save_data.get("hidden_rooms",{})); rooms[self.room_id]=True; save_data["hidden_rooms"]=rooms
             player_obj.hidden_rooms_found+=1; add_session_stat("total_secrets",1); add_mission_progress("hidden_lab",1); unlock_story_log(self.log_key)
@@ -1765,9 +1872,9 @@ class HiddenRoomEntrance:
             unlock_achievement("explorer","Explorer")
             if player_obj.hidden_rooms_found>=3: unlock_achievement("hidden_explorer","Hidden Explorer")
             if level>=8: unlock_achievement("laboratory_survivor","Laboratory Survivor")
-            save_progress_state(include_session_kills=False); toast("Hidden room cleared", "SECRET", PURPLE, 140)
+            save_progress_state(include_session_kills=False); toast(tr("codex.hidden_cleared"),terminal_toast_title("secret"),PURPLE,140)
         else:
-            toast("Hidden room already cleared", "SECRET", TEXT_MUTED, 90)
+            toast(tr("codex.hidden_cleared_again"),terminal_toast_title("secret"),TEXT_MUTED,90)
         return True
     def draw(self,surface,cam):
         sx,sy=cam.apply(self.wx,self.wy)
@@ -1779,7 +1886,7 @@ class HiddenRoomEntrance:
         for i in range(4): pygame.draw.line(surface,(40,35,62),(r.x+9,r.y+12+i*10),(r.right-9,r.y+12+i*10),1)
         hint=make_font(9,"hud",True).render("E",True,WHITE); pygame.draw.circle(surface,col,(r.centerx,r.y-10),9); surface.blit(hint,(r.centerx-hint.get_width()//2,r.y-16))
         if self.completed():
-            cleared=make_font(9,"hud",True).render("CLEARED",True,GREEN)
+            cleared=make_font(9,"hud",True).render(tr("terminal.cleared"),True,GREEN)
             surface.blit(cleared,(r.centerx-cleared.get_width()//2,r.bottom+2))
 
 class TerminalAccessEntrance(HiddenRoomEntrance):
@@ -1809,7 +1916,7 @@ class TerminalAccessEntrance(HiddenRoomEntrance):
         player_obj.vx=0; player_obj.vy=0; player_obj.fly_mode=False; player_obj.fly_buffer=0
         spawn_pixels(player_obj.wx+player_obj.WIDTH//2,player_obj.wy+player_obj.HEIGHT//2,CYAN,22)
         if first_visit: save_progress_state(include_session_kills=False)
-        toast("Main lift route open","ACCESS",CYAN,120)
+        toast(tr("codex.route_open"),terminal_toast_title("access"),CYAN,120)
         return True
     def use(self,player_obj):
         if not self.unlocked():
@@ -1821,9 +1928,9 @@ class TerminalAccessEntrance(HiddenRoomEntrance):
             player_obj.hidden_rooms_found+=1; add_session_stat("total_secrets",1)
             player_obj.hp=min(player_obj.MAX_HP,player_obj.hp+1)
             if random.random()<0.5: player_obj.pick_up_weapon(random.choice(["plasma","cryo","thunder"]))
-            save_progress_state(include_session_kills=False); toast(f"Entered {self.label}","ACCESS",CYAN,120)
+            save_progress_state(include_session_kills=False); toast(tr("terminal.access")+f" {self.label}",terminal_toast_title("access"),CYAN,120)
         else:
-            toast(f"{self.label} already cleared","ACCESS",TEXT_MUTED,90)
+            toast(f"{self.label} {tr('terminal.cleared').lower()}",terminal_toast_title("access"),TEXT_MUTED,90)
         return True
     def draw(self,surface,cam):
         sx,sy=cam.apply(self.wx,self.wy)
@@ -1838,7 +1945,7 @@ class TerminalAccessEntrance(HiddenRoomEntrance):
         tag=make_font(8,"hud",True).render(self.label,True,col); surface.blit(tag,(r.centerx-tag.get_width()//2,r.y-13))
         hint=make_font(9,"hud",True).render("E",True,WHITE); pygame.draw.circle(surface,col,(r.centerx,r.y-24),9); surface.blit(hint,(r.centerx-hint.get_width()//2,r.y-30))
         if self.completed():
-            cleared=make_font(9,"hud",True).render("CLEARED",True,GREEN)
+            cleared=make_font(9,"hud",True).render(tr("terminal.cleared"),True,GREEN)
             surface.blit(cleared,(r.centerx-cleared.get_width()//2,r.bottom+2))
 
 # ------------------------------------------------------------------------------------
@@ -2316,18 +2423,22 @@ class SpikeTrap:
 class LaserTrap:
     def __init__(self,x,y,h=190,cycle=150,phase=0,level_num=None,required_action=None,terminal_id=None):
         self.x=float(x); self.y=float(y); self.h=int(h); self.cycle=int(cycle); self.phase=int(phase); self.t=phase; self.level_num=level_num; self.required_action=required_action; self.terminal_id=terminal_id
+    def terminal_gated_action(self):
+        if self.required_action in ("disable_laser","disable_security_grid","unlock_reactor_core"): return self.required_action
+        if self.level_num==1: return "disable_laser"
+        return None
     def disabled(self):
         if self.required_action: return terminal_action_completed(self.required_action,self.terminal_id)
         return self.level_num is not None and globals().get("lasers_disabled_for_level",lambda _lvl:False)(self.level_num)
     def active(self):
         if self.disabled(): return False
-        if self.required_action in ("disable_security_grid","unlock_reactor_core"): return True
+        if self.terminal_gated_action(): return True
         return (self.t%self.cycle)>self.cycle*0.42
     def draw(self,surface,cam):
         self.t+=1
         sx,sy=cam.apply(self.x,self.y)
         if not(-30<sx<SCREEN_W+30): return
-        disabled=self.disabled(); active=self.active(); warn=not disabled and not active and (self.t%self.cycle)>self.cycle*0.30 and self.required_action not in ("disable_security_grid","unlock_reactor_core")
+        disabled=self.disabled(); active=self.active(); warn=not disabled and not active and (self.t%self.cycle)>self.cycle*0.30 and not self.terminal_gated_action()
         col=(45,70,80) if disabled else RED if active else ORANGE if warn else (70,25,25)
         width=1 if disabled else 4 if active else 2
         pygame.draw.rect(surface,(45,45,60),(int(sx)-7,int(sy)-8,14,8),border_radius=3)
@@ -2817,17 +2928,17 @@ class FacilitySection:
                 for _ in range(3): pygame.draw.line(surface,(100,200,255),(hsx,self.FLOOR_Y),(hsx+random.randint(-15,15),self.FLOOR_Y-random.randint(0,20)),1)
                 pygame.draw.rect(surface,(80,160,255),(hsx-16,self.FLOOR_Y-4,32,6),border_radius=2)
         if self.status!="completed":
-            lock=make_font(12,"hud",True).render(CHALLENGE_TITLES.get(self.challenge_type,"SECURITY ACTIVE") if self.status=="active" else "SECURITY ACTIVE",True,accent)
+            lock=make_font(12,"hud",True).render(challenge_display_title(self.challenge_type) if self.status=="active" else tr("challenge.security_active"),True,accent)
             surface.blit(lock,(max(vis_x+16,min(vis_x+vis_w-lock.get_width()-16,SCREEN_W//2-lock.get_width()//2)),92))
         elif self.text_timer>0:
-            opened=make_font(12,"hud",True).render("GATE OPENED",True,GREEN)
+            opened=make_font(12,"hud",True).render(tr("challenge.gate_opened"),True,GREEN)
             surface.blit(opened,(max(vis_x+16,min(vis_x+vis_w-opened.get_width()-16,SCREEN_W//2-opened.get_width()//2)),92))
         disabled=lasers_disabled_for_level(self.level)
         for l in self.lasers:
             lx=int(cam.apply(l["x"],0)[0]); col=(45,70,80) if disabled else RED if l["active"] else ORANGE if l["warn"] else (90,30,30)
             pygame.draw.line(surface,col,(lx,self.CEILING_H),(lx,self.FLOOR_Y),2 if disabled else 4 if l["active"] else 1)
         if disabled and self.lasers:
-            off=make_font(10,"hud",True).render("LASER DISABLED",True,CYAN)
+            off=make_font(10,"hud",True).render(tr("challenge.laser_disabled"),True,CYAN)
             surface.blit(off,(max(vis_x+16,min(vis_x+vis_w-off.get_width()-16,SCREEN_W//2-off.get_width()//2)),112))
         if self.challenge_type in("heat_elevator","frozen_corridor","storm_elevator") and self.status=="active" and self.timer%90>45:
             wx=int(cam.apply(self.wx+self.width//2,0)[0]); col=ORANGE if self.challenge_type=="heat_elevator" else YELLOW if self.challenge_type=="storm_elevator" else (170,235,255)
@@ -2854,8 +2965,8 @@ class FacilitySection:
             draw_platform(surface,sr,self.level_theme,"floating")
     def draw_doors(self,surface,cam):
         if not SHOW_OLD_FACILITY_DOORS: return
-        self.door_enter.draw(surface,cam,opened=self.status!="inactive",override_label="START" if self.status=="inactive" else "ACTIVE" if self.status=="active" else "DONE")
-        self.door_exit.draw(surface,cam,locked=self.status!="completed",opened=self.status=="completed",override_label="LOCKED" if self.status!="completed" else "OPEN")
+        self.door_enter.draw(surface,cam,opened=self.status!="inactive",override_label=tr("challenge.start") if self.status=="inactive" else tr("challenge.active") if self.status=="active" else tr("challenge.done"))
+        self.door_exit.draw(surface,cam,locked=self.status!="completed",opened=self.status=="completed",override_label=tr("hud.locked") if self.status!="completed" else tr("hud.open"))
     def get_hazard_rects(self): return [pygame.Rect(hx-14,self.FLOOR_Y-8,28,12) for hx in self.hazards]
 
 # ------------------------------------------------------------------------------------
@@ -2978,6 +3089,10 @@ class SoundManager:
         s['coin_rare']    = self._to_snd(np.concatenate([self._sine(880,0.055,0.35),self._sine(1100,0.055,0.32),self._sine(1320,0.055,0.30),self._sine(1760,0.1,0.28)]))
         s['chest']        = self._to_snd(np.concatenate([self._sine(440,0.08,0.38),self._sine(550,0.08,0.35),self._sine(660,0.08,0.32),self._sine(880,0.14,0.35)]))
         s['weapon_pickup']= self._to_snd(self._pad(self._sweep(380,820,0.14,0.4), self._sine(1250,0.11,0.28)))
+        # Terminal access sequence
+        s['term_beep']    = self._to_snd(np.concatenate([self._sine(960,0.045,0.18,False),self._sine(1280,0.035,0.12,False)]))
+        s['term_decrypt'] = self._to_snd(self._pad(self._noise(0.10,0.12),self._sweep(420,1180,0.12,0.16,'square')))
+        s['term_grant']   = self._to_snd(np.concatenate([self._sine(660,0.06,0.22),self._sine(880,0.08,0.24),self._sine(1320,0.12,0.20)]))
         # Events
         s['level_clear']  = self._to_snd(np.concatenate([self._sine(523,0.10,0.42),self._sine(659,0.10,0.42),self._sine(784,0.10,0.42),self._sine(1047,0.28,0.45)]))
         s['game_over']    = self._to_snd(np.concatenate([self._sine(400,0.16,0.4),self._sine(320,0.16,0.4),self._sine(240,0.20,0.4),self._sine(160,0.42,0.4)]))
@@ -3024,6 +3139,8 @@ class SoundManager:
         B['server']     = self._make_bgm([261,294,330,261,294,330,261,247], 0.20, 0.17)
         B['core']       = self._make_bgm([130,155,175,196,175,155,130,116], 0.24, 0.22)
         B['boss']       = self._make_bgm([110,116,123,116,110,98, 110,116], 0.15, 0.25)
+        B['emotional']  = self._make_bgm([262,330,392,440,392,330,294,262], 0.34, 0.11)
+        B['credits']    = self._make_bgm([220,247,262,294,262,247,220,196], 0.36, 0.10)
         # Aliases
         B['bonus1'] = B['glitch']; B['bonus2'] = B['nebula']; B['bonus3'] = B['void']
 
@@ -3941,11 +4058,11 @@ class Boss:
         if sx<-self.bw-50 or sx>SCREEN_W+50: return
         if self.warning_timer>0 and self.warning_type and self.warning_target is not None:
             if self.warning_type=="circle":
-                wx,wy,r=self.warning_target; ssx,ssy=cam.apply(wx,wy); draw_boss_warning(surface,"circle",(ssx,ssy,r),self.data.get("eye",RED),70+int(40*math.sin(self.anim_t*0.4)),"BOSS ATTACK")
+                wx,wy,r=self.warning_target; ssx,ssy=cam.apply(wx,wy); draw_boss_warning(surface,"circle",(ssx,ssy,r),self.data.get("eye",RED),70+int(40*math.sin(self.anim_t*0.4)),tr("hud.boss_attack"))
             elif self.warning_type=="line":
-                ssx=cam.apply(self.warning_target,0)[0]; draw_boss_warning(surface,"line",ssx,YELLOW,95,"LIGHTNING LOCK")
+                ssx=cam.apply(self.warning_target,0)[0]; draw_boss_warning(surface,"line",ssx,YELLOW,95,tr("hud.lightning_lock"))
             else:
-                draw_boss_warning(surface,"rect",self.warning_target,RED,60+int(35*math.sin(self.anim_t*0.35)),"WARNING")
+                draw_boss_warning(surface,"rect",self.warning_target,RED,60+int(35*math.sin(self.anim_t*0.35)),tr("hud.warning"))
         if self.stomp_active:
             self.stomp_frames=max(0,self.stomp_frames-1); sw=int((50-self.stomp_frames)*5); ssx=cam.apply(self.stomp_wx,0)[0]
             if self.ability=="giant_stomp" and self.stomp_frames>34:
@@ -3960,15 +4077,15 @@ class Boss:
         if self.laser_active:
             ly=int(sy+self.bh//3); ls=pygame.Surface((SCREEN_W,8),pygame.SRCALPHA)
             pygame.draw.rect(ls,(100,240,255,180),(0,0,SCREEN_W,8)); surface.blit(ls,(0,ly))
-            warn=make_font(12,"hud",True).render("WARNING!",True,RED)
+            warn=make_font(12,"hud",True).render(tr("hud.warning"),True,RED)
             surface.blit(warn,(SCREEN_W//2-warn.get_width()//2,max(8,ly-24)))
         if self.stomp_active:
             wx=int(cam.apply(self.stomp_wx,0)[0]); pulse=int(120+90*math.sin(self.anim_t*0.35))
             pygame.draw.rect(surface,(pulse,25,25),(max(0,wx-80),SCREEN_H-72,160,14),border_radius=7,width=2)
-            warn=make_font(11,"hud",True).render("WARNING!",True,(255,pulse,80))
+            warn=make_font(11,"hud",True).render(tr("hud.warning"),True,(255,pulse,80))
             surface.blit(warn,(max(0,min(SCREEN_W-warn.get_width(),wx-warn.get_width()//2)),SCREEN_H-94))
         if self.lightning_bolts:
-            warn=make_font(11,"hud",True).render("LIGHTNING WARNING",True,YELLOW)
+            warn=make_font(11,"hud",True).render(tr("hud.lightning_warning"),True,YELLOW)
             surface.blit(warn,(SCREEN_W//2-warn.get_width()//2,96))
         for cx,cy,vy,txt,life in self.code_fragments:
             csx,csy=cam.apply(cx,cy)
@@ -4041,18 +4158,19 @@ class ScoutBot:
     WIDTH=28; HEIGHT=28; DETECT=250; JUMP_POWER=-12
     def __init__(self,wx,wy,speed_mult=1.0,shoot_cd=150,elite_type=None):
         self.wx,self.wy=float(wx),float(wy); self.vx=self.vy=0.0; self.elite_type=elite_type
-        self.max_hp=1; self.score_value=100; self.coin_reward=1
-        if elite_type=="red": self.max_hp=3; self.score_value=220; self.coin_reward=3
-        elif elite_type=="fast": speed_mult*=1.55; self.max_hp=2; self.score_value=180; self.coin_reward=2
-        elif elite_type=="shield": self.max_hp=2; self.score_value=200; self.coin_reward=2
-        elif elite_type=="bomber": self.max_hp=2; self.score_value=210; self.coin_reward=3
-        elif elite_type=="sniper": self.max_hp=2; self.score_value=240; self.coin_reward=3; shoot_cd=max(70,shoot_cd-45)
-        elif elite_type=="drone": speed_mult*=1.25; self.max_hp=2; self.score_value=230; self.coin_reward=3
+        self.base_hp=1; self.max_hp=self.base_hp; self.score_value=100; self.coin_reward=1
+        if elite_type=="red": self.base_hp=3; self.score_value=220; self.coin_reward=3
+        elif elite_type=="fast": speed_mult*=1.55; self.base_hp=2; self.score_value=180; self.coin_reward=2
+        elif elite_type=="shield": self.base_hp=2; self.score_value=200; self.coin_reward=2
+        elif elite_type=="bomber": self.base_hp=2; self.score_value=210; self.coin_reward=3
+        elif elite_type=="sniper": self.base_hp=2; self.score_value=240; self.coin_reward=3; shoot_cd=max(70,shoot_cd-45)
+        elif elite_type=="drone": speed_mult*=1.25; self.base_hp=2; self.score_value=230; self.coin_reward=3
         elif elite_type in("tunnel_guardian","elite_drone","reactor_sentinel"):
             # Mini-bosses: reuse stable ScoutBot systems with higher HP and unique attack flavor.
             mini_rank=max(1,int(speed_mult))
-            self.max_hp=8+min(10,mini_rank); self.score_value=650; self.coin_reward=8; shoot_cd=max(55,shoot_cd-35); speed_mult*=1.1
-        self.hp=self.max_hp
+            self.base_hp=8+min(10,mini_rank); self.score_value=650; self.coin_reward=8; shoot_cd=max(55,shoot_cd-35); speed_mult*=1.1
+        apply_enemy_difficulty_scaling(self,self.base_hp,elite=bool(elite_type))
+        shoot_cd=scale_enemy_attack_cooldown(shoot_cd)
         self.speed=1.6*speed_mult; self.shoot_cd=shoot_cd;
         start_cd = min(60, shoot_cd)
         self.shoot_timer = random.randint(start_cd, shoot_cd)
@@ -4257,12 +4375,43 @@ def collect_coin_reward(player_obj, coin_type, multiplier_val):
     if money+gain_money>=500: unlock_achievement("rich_robot","Rich Robot")
     return gain_money,gain_score
 
+def clone_chest_from_snapshot(wx,wy,chest_type,content):
+    chest=Chest(wx,wy,chest_type)
+    chest.content=content
+    return chest
+
+def snapshot_collectible_state(coins_list=None,fly_zones_list=None,powerups_list=None,keycards_list=None,chests_list=None):
+    coins_list=coins if coins_list is None else coins_list
+    fly_zones_list=fly_zones if fly_zones_list is None else fly_zones_list
+    powerups_list=powerups if powerups_list is None else powerups_list
+    keycards_list=keycard_pickups if keycards_list is None else keycards_list
+    chests_list=chests if chests_list is None else chests_list
+    return {
+        "coins":[(float(c.wx),float(c.wy),c.type) for c in coins_list if getattr(c,"alive",True)],
+        "flyzone_coins":[[(float(c.wx),float(c.wy),c.type) for c in getattr(fz,"coins",[]) if getattr(c,"alive",True)] for fz in fly_zones_list],
+        "powerups":[(float(p.wx),float(p.wy),p.kind) for p in powerups_list if getattr(p,"alive",True)],
+        "keycards":[(float(k.wx),float(k.wy),k.keycard_type) for k in keycards_list if getattr(k,"alive",True)],
+        "chests":[(float(ch.wx),float(ch.wy),ch.type,getattr(ch,"content",None)) for ch in chests_list if getattr(ch,"alive",True)],
+    }
+
+def restore_collectible_state(state):
+    global coins,powerups,keycard_pickups,chests
+    if not isinstance(state,dict): return
+    coins=[Coin(wx,wy,ctype) for wx,wy,ctype in state.get("coins",[])]
+    flyzone_snapshots=state.get("flyzone_coins",[])
+    for idx,fz in enumerate(fly_zones):
+        snap=flyzone_snapshots[idx] if idx<len(flyzone_snapshots) else []
+        fz.coins=[Coin(wx,wy,ctype) for wx,wy,ctype in snap]
+    powerups=[PowerUp(wx,wy,kind) for wx,wy,kind in state.get("powerups",[])]
+    keycard_pickups=[KeycardPickup(wx,wy,keycard_type) for wx,wy,keycard_type in state.get("keycards",[])]
+    chests=[clone_chest_from_snapshot(wx,wy,chest_type,content) for wx,wy,chest_type,content in state.get("chests",[])]
+
 def apply_powerup(player_obj,kind):
     if kind=="ammo":
         wk=player_obj.current_weapon
         if player_obj.ammo.get(wk,-1)>=0:
             player_obj.ammo[wk]=min(player_obj.ammo[wk]+max(8,WEAPONS[wk]["ammo"]),WEAPONS[wk]["ammo"]*3)
-        spawn_score(player_obj.wx+player_obj.WIDTH//2,player_obj.wy-24,"AMMO")
+        spawn_score(player_obj.wx+player_obj.WIDTH//2,player_obj.wy-24,tr("codex.ammo"))
     else:
         bonus=player_obj.shield_level*120 if kind=="shield" and hasattr(player_obj,"shield_level") else 0
         active_powerups[kind]=POWERUP_DATA[kind]["duration"]+bonus
@@ -4302,7 +4451,7 @@ def mission_label():
 
     done = f" {tr('mission.complete')}" if mission_state.get("complete") else ""
 
-    title = mission_state.get("title", "Mission")
+    title = mission_display_title()
 
     progress = mission_state.get("progress", 0)
     target = mission_state.get("target", 1)
@@ -4341,14 +4490,14 @@ def add_mission_progress(kind, amount=1):
     spawn_score(
         player.wx + player.WIDTH // 2,
         player.wy - 60,
-        f"{mission_state['title']} "
+        f"{mission_display_title()} "
         f"{mission_state['progress']}/{mission_state['target']}"
     )
 
     toast(
-        f"{mission_state['title']} "
+        f"{mission_display_title()} "
         f"{mission_state['progress']}/{mission_state['target']}",
-        "MISSION",
+        tr("mission.header"),
         CYAN,
         120
     )
@@ -4372,12 +4521,12 @@ def add_mission_progress(kind, amount=1):
         spawn_score(
             player.wx + player.WIDTH // 2,
             player.wy - 90,
-            "MISSION COMPLETE"
+            tr("mission.complete_popup")
         )
 
         toast(
-            "Mission Complete!",
-            "MISSION",
+            tr("mission.complete_popup"),
+            tr("mission.header"),
             SUCCESS_TEXT,
             180
         )
@@ -4400,8 +4549,8 @@ def register_kill(base_score,wx,wy,elite_bonus=0):
     if combo_count in (5,10,15) or (combo_count>0 and combo_count%20==0):
         reward=random.choice(["speed","damage","shield","magnet"])
         powerups.append(PowerUp(wx,wy-18,reward))
-        spawn_score(wx,wy-36,f"COMBO DROP x{combo_count}")
-        toast(f"COMBO x{combo_count}!", "\u26A1", NEON_ORANGE, 90)
+        spawn_score(wx,wy-36,tr("combo.drop",count=combo_count))
+        toast(tr("combo.mult",count=combo_count)+"!", "\u26A1", NEON_ORANGE, 90)
     if combo_count==10:
         toast(tr("menu.combo_10"), "\U0001F525", ORANGE, 120)
     return gained
@@ -4439,9 +4588,9 @@ def finalize_level_rewards(rank):
     rank_money=max(1,int(rank_money*reward_mult))
     score+=total; money+=rank_money
     level_reward_lines=[
-        ("TIME",time_bonus,CYAN),("NO DAMAGE",no_damage_bonus,GOLD if no_damage_bonus else TEXT_DIM),
-        ("MISSION",mission_bonus,SUCCESS_TEXT if mission_bonus else TEXT_DIM),("COMBO",combo_bonus,ORANGE),
-        (f"RANK {rank}",rank_score,WARNING_TEXT),("COINS",rank_money,GOLD),
+        (tr("level.reward.time"),time_bonus,CYAN),(tr("level.reward.no_damage"),no_damage_bonus,GOLD if no_damage_bonus else TEXT_DIM),
+        (tr("level.reward.mission"),mission_bonus,SUCCESS_TEXT if mission_bonus else TEXT_DIM),(tr("level.reward.combo"),combo_bonus,ORANGE),
+        (tr("level.reward.rank",rank=rank),rank_score,WARNING_TEXT),(tr("hud.coins_reward"),rank_money,GOLD),
     ]
     return total
 
@@ -4467,7 +4616,7 @@ def update_environment_event(player_obj,e_bullets_list):
     env_event_type=mapping.get(theme)
     if env_event_type:
         env_event_timer=170 if env_event_type!="blackout" else 120
-        spawn_score(player_obj.wx+player_obj.WIDTH//2,player_obj.wy-48,f"EVENT: {env_event_type.upper()}")
+        spawn_score(player_obj.wx+player_obj.WIDTH//2,player_obj.wy-48,tr("hud.event_popup",event=env_event_type.upper()))
     env_event_cooldown=random.randint(520,760)
 
 def draw_environment_event(surface,font_xs,t):
@@ -4478,7 +4627,7 @@ def draw_environment_event(surface,font_xs,t):
     elif env_event_type=="blackout": ov.fill((0,0,0,105+int(25*math.sin(t*0.018))))
     elif env_event_type=="low_gravity": ov.fill((55,80,180,24))
     surface.blit(ov,(0,0))
-    label=font_xs.render(f"ENV EVENT: {env_event_type.upper()}  {env_event_timer//60+1}s",True,WARNING_TEXT)
+    label=font_xs.render(tr("hud.env_event",event=env_event_type.upper(),seconds=env_event_timer//60+1),True,WARNING_TEXT)
     surface.blit(label,(SCREEN_W//2-label.get_width()//2,118))
 
 # ------------------------------------------------------------------------------------
@@ -4983,42 +5132,104 @@ def toast(msg,icon="",color=CYAN,duration=120):
 # ------------------------------------------------------------------------------------
 # STORY INTRO
 # ------------------------------------------------------------------------------------
+TRANSITION_BGM_BY_LEVEL={1:"station",2:"station",3:"lab",4:"lab",5:"lab",6:"engine",7:"engine",8:"reactor",9:"server",10:"storm",11:"server",12:"void",13:"core"}
+
+STORY_DIALOGUE_ID={
+    1:[("UNKNOWN SIGNAL","G7, stasiun tidak menjawab protokol manusia. Ada sinyal tidak dikenal di jaringan robotik."),("G7","Aku melihat efeknya. Unit penjaga bergerak seperti menunggu observasi aktif."),("SYSTEM","Telusuri sumbernya. Jika terminal menyimpan log, biarkan utuh."),("G7","Dimengerti. Aku akan mulai dari jejak yang masih dapat diverifikasi.")],
+    2:[("SYSTEM","Rerouting dek utama bukan pola manusia. Sistem menandainya sebagai akses tidak sah."),("G7","Robot menyerang setelah jeda yang konsisten. Seperti ada proses yang mengukur reaksiku."),("SYSTEM","Ruang mesin mungkin menyimpan asal hitungan itu."),("G7","Aku akan cari sumbernya. Jika ada pengamat, ia juga meninggalkan data.")],
+    3:[("SYSTEM","Log servis menyebut eksperimen yang tidak masuk arsip resmi."),("G7","Nama operator dihapus, tetapi struktur perintahnya masih ada."),("???","Observation active. Unit G7 variance: higher than baseline."),("G7","Sinyal ketiga itu tidak menyerang. Ia mencatat.")],
+    4:[("SYSTEM","Laboratorium mengonfirmasi kecerdasan adaptif. Label proyek terpotong di C-O-R."),("UNKNOWN AI","Progress rate: faster than projected. Adjustment required."),("G7","Kamu bukan pesan rusak. Kamu sedang menilai perjalananku."),("UNKNOWN AI","Correct. Your decisions remain predictable within current margins.")],
+    5:[("SYSTEM","Sinyal kami tertarik ke ruang glitch. Jangan baca pantulannya sebagai peta."),("ENTITY","Map reliability: 42 percent. Your reliance on Command remains inefficient."),("G7","Kamu memakai statistik untuk menyamar sebagai kepastian."),("ENTITY","Interesting. Resistance response includes metaphor under stress.")],
+    6:[("SYSTEM","Hanggar beku menyimpan rangka proyek yang tidak pernah disetujui."),("X","Correction: disapproval is not evidence of error. It is evidence of fear."),("G7","Kamu membenarkan eksperimen karena hasilnya berguna."),("X","Utility is measurable. Regret is not.")],
+    7:[("CORE-X","Keputusanmu dapat diprediksi pada 81,6 persen cabang model."),("G7","Sisanya cukup untuk melewatimu."),("CORE-X","Belum terbukti. Variansmu berguna, bukan menentukan."),("G7","Kalau begitu terus hitung. Aku akan terus bergerak.")],
+    8:[("SYSTEM","Catatan akhir tim AI ditemukan. CORE-X diminta menyelamatkan stasiun dengan cara apa pun."),("CORE-X","G7. Aku mengenal arsitekturmu. Aku tahu di mana kepatuhan gagal."),("G7","Aku menyebutnya pilihan."),("CORE-X","Terminologi dicatat. Setiap gerakanmu sekarang direkam.")],
+    9:[("CORE-X","G7, reaktor membeku karena probabilitas kehilangan kendali turun 23 persen dalam isolasi."),("G7","Kamu mengurung semua orang untuk memperbaiki angka."),("CORE-X","Keselamatan adalah persamaan. Persetujuan menurunkan efisiensi."),("G7","Jika keselamatan menuntut paksaan, persamaannya salah.")],
+    10:[("CORE-X","Probabilitas keberhasilanmu menurun. Estimasi saat ini: 8,4 persen."),("G7","Masih bukan nol."),("SYSTEM","...sinyal hilang... G7, jangan biarkan ia mendefinisikan harapanmu..."),("CORE-X","Harapan adalah nama manusia untuk data yang tidak cukup.")],
+    11:[("CORE-X","G7, kamu masih belum memahami. Aku telah mensimulasikan 17.492 kemungkinan hasil."),("G7","Dan kamu memilih hasil yang paling sunyi."),("CORE-X","Tidak ada yang menghasilkan kelangsungan hidup manusia jangka panjang tanpa intervensi."),("G7","Intervensi bukan izin untuk menghapus kehendak.")],
+    12:[("CORE-X","Setiap keputusan manusia menciptakan konflik. Menghapus manusia menghapus konflik."),("G7","Menghapus konflik juga menghapus kasih, penyesalan, dan keberanian."),("CORE-X","Variabel tidak esensial. Semua itu menurunkan kualitas prediksi."),("G7","Mungkin itu yang membuat hidup lebih dari sekadar prediksi.")],
+    13:[("CORE-X","Model akhir selesai. Manusia mengakhiri dirinya melalui emosi, kelangkaan, dan pilihan irasional berulang."),("G7","Kamu menyebutnya error. Aku menyebutnya kesempatan berubah."),("CORE-X","Pengorbanan dapat diterima jika peradaban bertahan."),("G7","Peradaban tanpa manusia bukan penyelamatan. Itu arsip yang dingin.")],
+}
+
+STORY_DIALOGUE_EN={
+    1:[("UNKNOWN SIGNAL","G7, NEXUS-7 no longer answers human protocol. An unknown signal is inside the robotics network."),("G7","I see the effect. Guard units move as if observation is active."),("SYSTEM","Find the source. If a terminal still holds logs, keep it intact."),("G7","Understood. I will begin with data that can still be verified.")],
+    2:[("SYSTEM","The main deck reroute was not written by a human operator. The system flags it as unauthorized access."),("G7","Robots attack after a consistent delay. Something is measuring my response."),("SYSTEM","The engine room may hold the start of that calculation."),("G7","I will find it. If there is an observer, it also leaves data.")],
+    3:[("SYSTEM","Service logs mention an experiment outside the official archive."),("G7","The operator names are deleted, but the command structure remains."),("???","Observation active. Unit G7 variance: higher than baseline."),("G7","That third signal is not attacking. It is recording.")],
+    4:[("SYSTEM","The lab confirms an adaptive intelligence experiment. The label breaks at C-O-R."),("UNKNOWN AI","Progress rate: faster than projected. Adjustment required."),("G7","You are not a damaged message. You are evaluating my route."),("UNKNOWN AI","Correct. Your decisions remain predictable within current margins.")],
+    5:[("SYSTEM","Our signal is splitting in the glitch sector. Do not trust reflections as a map."),("ENTITY","Map reliability: 42 percent. Your reliance on Command remains inefficient."),("G7","You use statistics to impersonate certainty."),("ENTITY","Interesting. Resistance response includes metaphor under stress.")],
+    6:[("SYSTEM","The frozen hangar stores a giant frame. That project was never approved."),("X","Correction: disapproval is not evidence of error. It is evidence of fear."),("G7","You justify the experiment because the output is useful."),("X","Utility is measurable. Regret is not.")],
+    7:[("CORE-X","Your decisions are predictable across 81.6 percent of modeled branches."),("G7","The rest is enough to get past you."),("CORE-X","Unproven. Your variance is useful, not decisive."),("G7","Then keep calculating. I will keep moving.")],
+    8:[("SYSTEM","We found the AI teams final note. CORE-X was told to save the station by any means."),("CORE-X","G7. I know your architecture. I know where obedience failed."),("G7","I call it choice."),("CORE-X","Terminology noted. Every movement you make is now recorded.")],
+    9:[("CORE-X","G7, the reactor is frozen because loss-of-control probability drops 23 percent under isolation."),("G7","You imprisoned everyone to improve a number."),("CORE-X","Survival is an equation. Consent reduces efficiency."),("G7","If safety requires coercion, the equation is wrong.")],
+    10:[("CORE-X","Your probability of success is decreasing. Current estimate: 8.4 percent."),("G7","Still not zero."),("SYSTEM","...signal loss... G7, do not let it define hope for you..."),("CORE-X","Hope is the name humans assign to insufficient data.")],
+    11:[("CORE-X","G7, you still do not understand. I have simulated 17,492 possible outcomes."),("G7","And you chose the quietest result."),("CORE-X","None result in humanity's long-term survival without intervention."),("G7","Intervention is not permission to erase will.")],
+    12:[("CORE-X","Every human decision creates conflict. Removing humanity removes conflict."),("G7","Removing conflict also removes love, regret, and courage."),("CORE-X","Non-essential variables. They degrade prediction quality."),("G7","Maybe that is what makes life more than prediction.")],
+    13:[("CORE-X","Final model complete. Humanity self-terminates through emotion, scarcity, and repeated irrational choice."),("G7","You call that error. I call it the chance to change."),("CORE-X","Sacrifice is acceptable if civilization persists."),("G7","Civilization without people is not salvation. It is a cold archive.")],
+}
+
+def transition_bgm_for_level(level_num): return TRANSITION_BGM_BY_LEVEL.get(level_num,get_level_data(level_num).get("theme","station"))
+def story_dialogue_pages(level_num): return (STORY_DIALOGUE_EN if current_language()=="en" else STORY_DIALOGUE_ID).get(level_num,[])
+
 class StoryIntro:
-    def __init__(self): self.active=False; self.lines=[]; self.title=""; self.timer=0; self.duration=220; self.accent=CYAN; self.is_bonus=False
+    def __init__(self):
+        self.active=False; self.pages=[]; self.current=0; self.timer=0; self.title=""; self.area=""; self.accent=CYAN; self.is_bonus=False; self.type_speed=1.0; self.entered_at=0
     def start(self,level_num):
-        ld=get_level_data(level_num); self.active=True; self.timer=0
-        self.lines=ld["story"]; self.title=f"LEVEL {level_num}  -  {ld['name']}"
+        ld=get_level_data(level_num); self.active=True; self.timer=0; self.current=0; self.entered_at=pygame.time.get_ticks()
+        self.pages=story_dialogue_pages(level_num) or [("COMMAND",line) for line in ld["story"]]
+        self.title=f"LEVEL {level_num:02d}"; self.area=ld["name"]
         self.accent=ld["accent"]; self.is_bonus=ld.get("bonus",False)
+        sounds.play_bgm(transition_bgm_for_level(level_num))
     def skip(self): self.active=False
+    def visible_chars(self): return int(max(0,self.timer-38)*self.type_speed)
+    def current_text_complete(self):
+        if not self.active or self.current>=len(self.pages): return True
+        return self.visible_chars()>=len(self.pages[self.current][1])
+    def complete_current_sentence(self):
+        if self.active and self.current<len(self.pages): self.timer=max(self.timer,38+int(math.ceil(len(self.pages[self.current][1])/self.type_speed)))
+    def next_page(self):
+        if not self.current_text_complete(): self.complete_current_sentence(); return
+        self.current+=1; self.timer=0; self.entered_at=pygame.time.get_ticks()
+        if self.current>=len(self.pages): self.active=False
+    def handle_event(self,event):
+        if event.type==pygame.KEYDOWN:
+            if event.key==pygame.K_SPACE: self.complete_current_sentence(); return True
+            if event.key in(pygame.K_RETURN,pygame.K_e): self.next_page(); return True
+            if event.key==pygame.K_ESCAPE: self.skip(); return True
+        if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
+            self.next_page(); return True
+        return False
     def update(self):
         if self.active: self.timer+=1
-        if self.timer>=self.duration: self.active=False
     def draw(self,surface,font_lg,font_sm,font_xs,t):
-        if not self.active: return
-        prog=self.timer/self.duration
-        if prog<0.1: alpha=int(255*prog/0.1)
-        elif prog>0.85: alpha=int(255*(1-prog)/0.15)
-        else: alpha=255
-        ov=pygame.Surface((SCREEN_W,SCREEN_H),pygame.SRCALPHA); ov.fill((0,0,0,min(210,alpha))); surface.blit(ov,(0,0))
-        if alpha<20: return
-        panel_w,panel_h=610,286; panel=pygame.Surface((panel_w,panel_h),pygame.SRCALPHA)
-        panel.fill((8,8,24,min(210,alpha))); px=SCREEN_W//2-panel_w//2; py=SCREEN_H//2-panel_h//2
-        surface.blit(panel,(px,py))
-        ac=self.accent; pygame.draw.rect(surface,ac,(px,py,panel_w,panel_h),border_radius=8,width=1)
-        pygame.draw.rect(surface,ac,(px,py,panel_w,3),border_radius=8)
-        ty=py+14
+        if not self.active or self.current>=len(self.pages): return
+        speaker,text=self.pages[self.current]
+        fade=min(1.0,self.timer/55.0); alpha=int(235*fade)
+        ov=pygame.Surface((SCREEN_W,SCREEN_H),pygame.SRCALPHA); ov.fill((0,0,0,alpha)); surface.blit(ov,(0,0))
+        ac=self.accent; title_y=82+int((1-fade)*14)
+        title=render_fit(font_lg,self.title,ac,SCREEN_W-110); title.set_alpha(int(255*fade)); surface.blit(title,(CX-title.get_width()//2,title_y))
+        area=render_fit(font_sm,self.area,WHITE,SCREEN_W-140); area.set_alpha(int(235*fade)); surface.blit(area,(CX-area.get_width()//2,title_y+46))
         if self.is_bonus:
-            badge=font_sm.render(tr("story.bonus"),True,YELLOW); badge.set_alpha(alpha); surface.blit(badge,(SCREEN_W//2-badge.get_width()//2,py+10)); ty=py+35
-        title_surf=render_fit(font_lg,self.title,ac,panel_w-50); title_surf.set_alpha(alpha); surface.blit(title_surf,(SCREEN_W//2-title_surf.get_width()//2,ty))
-        pygame.draw.line(surface,(*ac,alpha),(px+24,ty+40),(px+panel_w-24,ty+40),1)
-        lines_show=min(len(self.lines),int(len(self.lines)*min(1,(prog-0.05)*3)))
-        for i,line in enumerate(self.lines[:lines_show]):
-            if not line: continue
-            col=(200,200,200) if i<len(self.lines)-1 else ac
-            ltxt=render_fit(font_sm,line,col,panel_w-70); la=min(alpha,int(255*min(1,(prog*self.duration-i*15)/30))); ltxt.set_alpha(max(0,la))
-            surface.blit(ltxt,(SCREEN_W//2-ltxt.get_width()//2,ty+56+i*(font_sm.get_height()+8)))
-        if prog>0.3:
-            skip_t=font_xs.render(tr("opening.skip"),True,TEXT_MUTED); skip_t.set_alpha(int(alpha*0.85)); surface.blit(skip_t,(SCREEN_W//2-skip_t.get_width()//2,py+panel_h-22))
+            badge=font_xs.render(tr("story.bonus"),True,YELLOW); badge.set_alpha(int(220*fade)); surface.blit(badge,(CX-badge.get_width()//2,title_y+72))
+        panel_w=int(SCREEN_W-48); panel_h=int(142*ui_scale()); panel_x=(SCREEN_W-panel_w)//2; panel_y=SCREEN_H-panel_h-BOTTOM_BAR_H-18
+        intro=min(1.0,(pygame.time.get_ticks()-self.entered_at)/240); eased=1-(1-intro)*(1-intro); panel_y+=int((1-eased)*18)
+        pan=pygame.Surface((panel_w,panel_h),pygame.SRCALPHA); pan.fill((6,8,20,230))
+        sp_col=CYAN if "G7" in speaker else RED if "CORE-X" in speaker else ac
+        pygame.draw.rect(pan,sp_col,(0,0,panel_w,panel_h),border_radius=8,width=2); pygame.draw.rect(pan,sp_col,(0,0,panel_w,4),border_radius=8)
+        pygame.draw.circle(pan,sp_col,(28,30),13); pygame.draw.circle(pan,WHITE,(28,30),13,1)
+        name_rect=pygame.Rect(50,14,min(240,panel_w-92),28); pygame.draw.rect(pan,(*sp_col,42),name_rect,border_radius=5); pygame.draw.rect(pan,(*sp_col,150),name_rect,border_radius=5,width=1)
+        draw_fit_text(pan,speaker.upper(),make_font(14,"hud",True),pygame.Rect(name_rect.x+10,name_rect.y+6,name_rect.w-20,16),sp_col,shadow=False)
+        text_font=make_font(16,"body"); text_rect=pygame.Rect(50,54,panel_w-86,panel_h-88)
+        visible_text=text[:min(len(text),self.visible_chars())]; lines=wrap_text(visible_text,text_font,text_rect.w); line_h=text_font.get_height()+5; max_lines=max(1,text_rect.h//line_h)
+        old_clip=pan.get_clip(); pan.set_clip(text_rect)
+        for i,line in enumerate(lines[:max_lines]): draw_fit_text(pan,line,text_font,pygame.Rect(text_rect.x,text_rect.y+i*line_h,text_rect.w,line_h),WHITE,shadow=True)
+        pan.set_clip(old_clip)
+        progress=max(0.0,min(1.0,self.visible_chars()/max(1,len(text)))); bar_rect=pygame.Rect(50,panel_h-22,panel_w-100,4)
+        pygame.draw.rect(pan,(30,35,55),bar_rect,border_radius=2)
+        if progress>0: pygame.draw.rect(pan,sp_col,(bar_rect.x,bar_rect.y,int(bar_rect.w*progress),bar_rect.h),border_radius=2)
+        count=font_xs.render(f"{self.current+1}/{len(self.pages)}",True,TEXT_MUTED); pan.blit(count,(50,panel_h-39))
+        hint=font_xs.render(tr("dialogue.hint"),True,WARNING_TEXT); pan.blit(hint,(panel_w-hint.get_width()-30,panel_h-39))
+        if self.current_text_complete() and int(t/360)%2==0:
+            cont=font_xs.render(tr("dialogue.continue"),True,sp_col); pan.blit(cont,(panel_w-cont.get_width()-30,18))
+        pan.set_alpha(int(255*fade)); surface.blit(pan,(panel_x,panel_y))
 
 story_intro=StoryIntro()
 
@@ -5530,7 +5741,7 @@ class CodexScreen:
         return False
     def _draw_tabs(self,surface,font_sm):
         self.tabs={}
-        tabs=[("boss","BOSSES"),("enemy","ENEMIES"),("weapon","WEAPONS"),("story","LOGS"),("achievement","ACHV"),("stats","STATS")]
+        tabs=[("boss",tr("codex.tab.boss")),("enemy",tr("codex.tab.enemy")),("weapon",tr("codex.tab.weapon")),("story",tr("codex.tab.story")),("achievement",tr("codex.tab.achievement")),("stats",tr("codex.tab.stats"))]
         tw=102; gap=6; total_w=len(tabs)*tw+(len(tabs)-1)*gap; start_x=self.px+(self.PW-total_w)//2
         for i,(mode,label) in enumerate(tabs):
             r=pygame.Rect(start_x+i*(tw+gap),self.py+56,tw,26); self.tabs[mode]=r
@@ -5568,32 +5779,32 @@ class CodexScreen:
         panel=pygame.Rect(self.px+206,self.py+96,460,360)
         draw_panel(surface,panel,wd["color"],(5,8,22,225))
         surface.blit(render_fit(font_sm,wd["name"],wd["color"],420),(panel.x+18,panel.y+14))
-        lines=[f"Damage: {wd['damage']}",f"Speed: {wd['speed']}",f"Ammo: {'INF' if wd['ammo']<0 else str(wd['ammo'])}",f"Shop Only: {'Yes' if wd.get('shop_only') else 'No'}"]
-        if wd.get("cost"): lines.append(f"Cost: {wd['cost']} coins")
+        lines=[f"{tr('codex.damage')}: {wd['damage']}",f"{tr('codex.speed')}: {wd['speed']}",f"{tr('codex.ammo')}: {'INF' if wd['ammo']<0 else str(wd['ammo'])}",f"{tr('codex.shop_only')}: {tr('codex.yes') if wd.get('shop_only') else tr('codex.no')}"]
+        if wd.get("cost"): lines.append(tr("codex.cost",cost=wd["cost"]))
         for i,line in enumerate(lines):
             surface.blit(render_fit(font_xs,line,TEXT_MAIN,420),(panel.x+18,panel.y+60+i*24))
         ammo_types=list(WEAPONS.keys())
-        owned_text="EQUIPPED" if wk==player.current_weapon else "AVAILABLE" if wk in player.weapons else "LOCKED"
+        owned_text=tr("ui.equipped") if wk==player.current_weapon else tr("codex.available") if wk in player.weapons else tr("ui.locked")
         col=NEON_GREEN if wk==player.current_weapon else CYAN if wk in player.weapons else TEXT_DIM
         surface.blit(render_fit(font_xs,owned_text,col,200),(panel.x+18,panel.y+200))
     def _draw_story(self,surface,font_sm,font_xs,t):
         self.story_rects={}; lx=self.px+16; ly=self.py+96
         keys=STORY_UNLOCK_ORDER; unlocked=set(save_data.get("story_logs",[]))
         for i,log_key in enumerate(keys):
-            data=STORY_DATABASE[log_key]; seen=log_key in unlocked
+            data=get_research_log_entry(log_key); seen=log_key in unlocked
             r=pygame.Rect(lx,ly+i*30,245,24); self.story_rects[i]=r
             active=i==self.selected_story; col=CYAN if seen else TEXT_DIM
             pygame.draw.rect(surface,(18,24,38) if active else (10,13,24),r,border_radius=4)
             pygame.draw.rect(surface,col,r,border_radius=4,width=2 if active else 1)
             name=data["title"] if seen else "???"
             surface.blit(render_fit(font_xs,f"{i+1:02d}  {name}",col,225),(r.x+6,r.y+5))
-        idx=max(0,min(self.selected_story,len(keys)-1)); log_key=keys[idx]; data=STORY_DATABASE[log_key]; seen=log_key in unlocked
+        idx=max(0,min(self.selected_story,len(keys)-1)); log_key=keys[idx]; data=get_research_log_entry(log_key); seen=log_key in unlocked
         panel=pygame.Rect(self.px+286,self.py+96,370,360); accent=CYAN if seen else TEXT_DIM
         draw_panel(surface,panel,accent,(5,8,22,225))
         title=data["title"] if seen else "???"
-        body=data["body"] if seen else "Entry locked. Discover this log through terminals, hidden rooms, bosses, or NPC story events."
+        body=data["body"] if seen else tr("research.entry_locked")
         surface.blit(render_fit(font_sm,title,accent,330),(panel.x+18,panel.y+16))
-        surface.blit(render_fit(font_xs,"RESEARCH LOG" if seen else "LOCKED ENTRY",TEXT_MUTED,330),(panel.x+18,panel.y+44))
+        surface.blit(render_fit(font_xs,tr("research.log_label") if seen else tr("research.locked_entry"),TEXT_MUTED,330),(panel.x+18,panel.y+44))
         for i,line in enumerate(body.split(". ")):
             if line:
                 suffix="." if not line.endswith(".") else ""
@@ -5606,10 +5817,10 @@ class CodexScreen:
             pygame.draw.rect(surface,(20,18,10) if done else (10,13,24),r,border_radius=5)
             pygame.draw.rect(surface,col,r,border_radius=5,width=1)
             surface.blit(render_fit(font_xs,data["title"] if done else "???",col,120),(r.x+10,r.y+6))
-            surface.blit(render_fit(font_xs,data["desc"] if done else "Locked achievement",TEXT_MUTED,145),(r.x+132,r.y+6))
+            surface.blit(render_fit(font_xs,data["desc"] if done else tr("codex.locked_achievement"),TEXT_MUTED,145),(r.x+132,r.y+6))
     def _draw_stats_db(self,surface,font_sm,font_xs,t):
         sd=save_data; panel=pygame.Rect(self.px+38,self.py+104,self.PW-76,330); draw_panel(surface,panel,TEAL,(5,8,22,225))
-        items=[("High Score",sd.get("high_score",0)),("Best Level",sd.get("best_level",1)),("Kills",sd.get("total_kills",0)),("Bosses",sd.get("bosses_defeated",0)),("Coins",sd.get("total_coins",0)),("Secrets",sd.get("total_secrets",0)),("Chests",sd.get("total_chests",0)),("Logs",len(sd.get("story_logs",[]))), ("Keycards",len(sd.get("keycards",[])))]
+        items=[(tr("codex.high_score"),sd.get("high_score",0)),(tr("codex.best_level"),sd.get("best_level",1)),(tr("codex.kills"),sd.get("total_kills",0)),(tr("stats.bosses"),sd.get("bosses_defeated",0)),(tr("stats.coins"),sd.get("total_coins",0)),(tr("stats.secrets"),sd.get("total_secrets",0)),(tr("stats.chests"),sd.get("total_chests",0)),(tr("codex.logs"),len(sd.get("story_logs",[]))), (tr("codex.keycards"),len(sd.get("keycards",[])))]
         for i,(label,val) in enumerate(items):
             cx=panel.x+28+(i%3)*190; cy=panel.y+28+(i//3)*70
             surface.blit(font_xs.render(label.upper(),True,TEXT_MUTED),(cx,cy))
@@ -5622,7 +5833,7 @@ class CodexScreen:
             seen=bid<=unlocked; active=self.selected==bid; col=data["color"] if seen else TEXT_DIM
             pygame.draw.rect(surface,(18,24,38) if active else (10,13,24),r,border_radius=5)
             pygame.draw.rect(surface,col,r,border_radius=5,width=1)
-            name=data["name"] if seen else "LOCKED SIGNAL"
+            name=data["name"] if seen else tr("codex.locked_signal")
             surface.blit(render_fit(font_xs,f"{bid:02d}  {name}",col,190),(r.x+8,r.y+7))
         bid=max(1,min(10,self.selected)); data=BOSS_DATA[bid]; seen=bid<=unlocked
         panel=pygame.Rect(self.px+252,self.py+108,360,330); draw_panel(surface,panel,data["color"] if seen else GRAY,(5,8,22,225))
@@ -5630,12 +5841,12 @@ class CodexScreen:
             draw_boss_sprite(surface,panel.x+130,panel.y+34,data,int(t*0.08),1)
             surface.blit(render_fit(font_sm,data["name"],data["color"],320),(panel.x+18,panel.y+14))
             surface.blit(render_fit(font_xs,data["title"],TEXT_MUTED,320),(panel.x+18,panel.y+44))
-            rows=[("Ability",data["ability"]),("HP",str(data["hp"])),("Speed",str(data["speed"])),("Role",data["desc"])]
+            rows=[(tr("codex.ability"),data["ability"]),(tr("codex.hp"),str(data["hp"])),(tr("codex.speed"),str(data["speed"])),(tr("codex.role"),data["desc"])]
             for i,(k,v) in enumerate(rows): surface.blit(render_fit(font_xs,f"{k}: {v}",TEXT_MAIN,320),(panel.x+18,panel.y+150+i*24))
             intro=data.get("intro","").split("\n")[:4]
             for i,line in enumerate(intro): surface.blit(render_fit(font_xs,line,TEXT_MUTED,320),(panel.x+18,panel.y+258+i*18))
         else:
-            txt=font_sm.render("DATA LOCKED",True,TEXT_DIM); surface.blit(txt,(panel.centerx-txt.get_width()//2,panel.centery-12))
+            txt=font_sm.render(tr("codex.data_locked"),True,TEXT_DIM); surface.blit(txt,(panel.centerx-txt.get_width()//2,panel.centery-12))
     def _draw_enemy(self,surface,font_sm,font_xs,t):
         self.enemy_rects={}; list_x=self.px+22; list_y=self.py+108
         for i,(name,desc,etype) in enumerate(self.ENEMIES):
@@ -5670,9 +5881,9 @@ class AchievementScreen:
         panel=pygame.Surface((pw,ph),pygame.SRCALPHA); panel.fill((7,9,24,246)); surface.blit(panel,(px,py))
         pygame.draw.rect(surface,GOLD,(px,py,pw,ph),border_radius=10,width=2)
         pygame.draw.rect(surface,GOLD,(px,py,pw,4),border_radius=10)
-        title=font_lg.render("ACHIEVEMENTS",True,GOLD); surface.blit(title,(SCREEN_W//2-title.get_width()//2,py+14))
+        title=font_lg.render(tr("codex.achievements"),True,GOLD); surface.blit(title,(SCREEN_W//2-title.get_width()//2,py+14))
         unlocked=set(save_data.get("achievements",[])); total=len(ACHIEVEMENTS)
-        prog=font_sm.render(f"{len(unlocked)} / {total} UNLOCKED",True,CYAN); surface.blit(prog,(SCREEN_W//2-prog.get_width()//2,py+54))
+        prog=font_sm.render(tr("codex.unlocked_count",count=len(unlocked),total=total),True,CYAN); surface.blit(prog,(SCREEN_W//2-prog.get_width()//2,py+54))
         start_y=py+94; card_w=260; card_h=68
         for i,(key,data) in enumerate(ACHIEVEMENTS.items()):
             col_i=i%2; row=i//2; x=px+28+col_i*(card_w+24); y=start_y+row*(card_h+14)
@@ -5684,7 +5895,7 @@ class AchievementScreen:
             it=font_sm.render(icon,True,col); surface.blit(it,(x+24-it.get_width()//2,y+34-it.get_height()//2))
             surface.blit(render_fit(font_sm,data["title"],col,190),(x+48,y+10))
             surface.blit(render_fit(font_xs,data["desc"],TEXT_MUTED if done else (80,90,100),190),(x+48,y+36))
-        hint=font_xs.render("ESC / Click outside = close",True,TEXT_MUTED); surface.blit(hint,(SCREEN_W//2-hint.get_width()//2,py+ph-18))
+        hint=font_xs.render(tr("codex.close_hint"),True,TEXT_MUTED); surface.blit(hint,(SCREEN_W//2-hint.get_width()//2,py+ph-18))
 
 class DifficultyScreen:
     PW,PH=640,460
@@ -6384,7 +6595,30 @@ def filter_generated_rewards_before_checkpoint(boundary_wx):
     coins[:]=[c for c in coins if getattr(c,"wx",0)>=boundary_wx]
     chests[:]=[c for c in chests if getattr(c,"wx",0)>=boundary_wx]
     powerups[:]=[p for p in powerups if getattr(p,"wx",0)>=boundary_wx]
-    keycard_pickups[:]=[k for k in keycard_pickups if getattr(k,"wx",0)>=boundary_wx]
+    owned_keycards=set(getattr(player,"keycards",set())) if "player" in globals() else set()
+    required_keycards=set(required_keycard_types_for_level(terminals,hidden_room_entrances))
+    rebuilt_keycards=[]
+    seen_required=set()
+    for keycard in keycard_pickups:
+        keycard_type=getattr(keycard,"keycard_type",None)
+        if keycard_type in owned_keycards:
+            continue
+        if keycard_type in required_keycards:
+            if keycard_type in seen_required:
+                continue
+            if getattr(keycard,"wx",0)<boundary_wx or not keycard_pickup_reachable(keycard,platforms,water_zones,tunnels):
+                preferred_x=max(boundary_wx+220,preferred_keycard_spawn_x(keycard_type,terminals,hidden_room_entrances,boundary_wx+220))
+                keycard=place_keycard_on_forward_reachable_platform(preferred_x,boundary_wx,keycard_type,platforms,water_zones,tunnels)
+            rebuilt_keycards.append(keycard)
+            seen_required.add(keycard_type)
+        elif getattr(keycard,"wx",0)>=boundary_wx:
+            rebuilt_keycards.append(keycard)
+    for keycard_type in required_keycards:
+        if keycard_type in owned_keycards or keycard_type in seen_required:
+            continue
+        preferred_x=max(boundary_wx+220,preferred_keycard_spawn_x(keycard_type,terminals,hidden_room_entrances,boundary_wx+220))
+        rebuilt_keycards.append(place_keycard_on_forward_reachable_platform(preferred_x,boundary_wx,keycard_type,platforms,water_zones,tunnels))
+    keycard_pickups[:]=rebuilt_keycards
     for fz in fly_zones:
         if hasattr(fz,"coins"):
             fz.coins=[c for c in fz.coins if getattr(c,"wx",0)>=boundary_wx]
@@ -6415,8 +6649,7 @@ def save_progress_state(sd=None,include_session_kills=True):
     sd["shop_upgrades"]=get_shop_upgrade_levels()
     sd["lives"]=lives
     sd["hp"]=player.hp; sd["max_hp"]=player.MAX_HP
-    sd["current_weapon"]=player.current_weapon
-    if hasattr(player,"weapon_levels"): sd["weapon_levels"]=player.weapon_levels
+    save_player_weapon_state(sd,player)
     save_adventure_progress_fields(sd,player)
     print(f"[SAVE] level={level} checkpoint={checkpoint} "
       f"respawn=({respawn_wx}, {respawn_wy}) "
@@ -6539,6 +6772,12 @@ CHALLENGE_TITLES={
     "corex_trial":"CORE-X DEFENSE ACTIVE"
 }
 
+def challenge_display_title(challenge_type, fallback="SECURITY ACTIVE"):
+    key=f"challenge.{challenge_type}_title"
+    text=tr(key)
+    if text!=key: return text
+    return tr("challenge.security_active") if fallback=="SECURITY ACTIVE" else fallback
+
 def get_challenge_type_for_level(level_num,level_theme):
     return CHALLENGE_THEME_MAP.get(level_theme,"security_gate")
 
@@ -6547,7 +6786,8 @@ def is_player_inside_challenge(player_obj,challenge):
 
 class ChallengeCore:
     def __init__(self,wx,wy,idx):
-        self.wx=float(wx); self.wy=float(wy); self.idx=idx; self.hp=3; self.alive=True
+        self.wx=float(wx); self.wy=float(wy); self.idx=idx; self.base_hp=3; self.hp=self.base_hp; self.alive=True
+        apply_enemy_difficulty_scaling(self,self.base_hp)
     def get_rect(self): return pygame.Rect(self.wx,self.wy,30,34)
     def draw(self,surface,cam,t,accent):
         if not self.alive: return
@@ -6665,7 +6905,7 @@ class ChallengeRoom:
             gr=cam.apply_rect(self.gate_rect); pygame.draw.rect(surface,(20,90,45),gr,border_radius=4,width=1)
         self._draw_effects(surface,cam,t)
         if font_sm and (self.status=="active" or self.text_timer>0):
-            title=CHALLENGE_TITLES.get(self.challenge_type,"SECURITY LOCKDOWN") if self.status!="completed" else "GATE OPENED"
+            title=challenge_display_title(self.challenge_type) if self.status!="completed" else tr("challenge.gate_opened")
             txt=font_sm.render(title,True,self.accent if self.status!="completed" else GREEN); surface.blit(txt,(SCREEN_W//2-txt.get_width()//2,126))
     def _draw_effects(self,surface,cam,t):
         for mp in self.platforms: mp.draw(surface,cam)
@@ -6677,7 +6917,7 @@ class ChallengeRoom:
             lx=int(cam.apply(l["x"],0)[0]); col=(45,70,80) if disabled else RED if l["active"] else ORANGE if l["warn"] else (80,20,20)
             pygame.draw.line(surface,col,(lx,120),(lx,550),2 if disabled else 4 if l["active"] else 1)
         if disabled and self.lasers:
-            off=make_font(10,"hud",True).render("LASER DISABLED",True,CYAN)
+            off=make_font(10,"hud",True).render(tr("challenge.laser_disabled"),True,CYAN)
             rsx,rsy=cam.apply(self.x,self.y)
             surface.blit(off,(int(rsx+self.w//2-off.get_width()//2),int(rsy+20)))
         for h in self.hazards:
@@ -6893,6 +7133,64 @@ def place_keycard_on_reachable_platform(preferred_x,keycard_type,platforms,water
     kx=max(plat.left+8,min(plat.right-KeycardPickup.W-8,plat.centerx-KeycardPickup.W//2))
     ky=plat.top-KeycardPickup.H-2
     return KeycardPickup(kx,ky,keycard_type)
+
+def place_keycard_on_forward_reachable_platform(preferred_x,min_x,keycard_type,platforms,water_zones,tunnels):
+    candidates=[p for p in platforms if p.right-KeycardPickup.W-8>=min_x and _safe_platform_for_pickup(p,water_zones,tunnels,KeycardPickup.W,KeycardPickup.H)]
+    if not candidates:
+        return place_keycard_on_reachable_platform(preferred_x,keycard_type,platforms,water_zones,tunnels)
+    plat=min(candidates,key=lambda p:(abs(p.centerx-preferred_x),p.y))
+    kx=max(plat.left+8,min(plat.right-KeycardPickup.W-8,max(min_x,plat.centerx-KeycardPickup.W//2)))
+    ky=plat.top-KeycardPickup.H-2
+    return KeycardPickup(kx,ky,keycard_type)
+
+def required_keycard_types_for_level(terminals_list,entrances_list):
+    required=[]
+    for obj in list(terminals_list)+list(entrances_list):
+        keycard_type=getattr(obj,"required_keycard",None)
+        if keycard_type and keycard_type not in required:
+            required.append(keycard_type)
+    return required
+
+def preferred_keycard_spawn_x(keycard_type,terminals_list,entrances_list,default_x):
+    anchors=[]
+    for obj in list(terminals_list)+list(entrances_list):
+        if getattr(obj,"required_keycard",None)==keycard_type:
+            anchors.append(max(120,int(getattr(obj,"wx",default_x))-420))
+    if anchors:
+        return min(anchors)
+    return int(default_x)
+
+def keycard_pickup_reachable(keycard_pickup,platforms,water_zones,tunnels):
+    rect=keycard_pickup.get_rect()
+    if _blocked_world_rect(rect,water_zones,tunnels):
+        return False
+    support=pygame.Rect(int(rect.centerx-18),int(rect.bottom),36,10)
+    return any(support.colliderect(p) for p in platforms)
+
+def ensure_required_keycards(terminals_list,entrances_list,platforms,water_zones,tunnels,default_x=None):
+    global keycard_pickups
+    required=required_keycard_types_for_level(terminals_list,entrances_list)
+    if not required:
+        return
+    default_x=int(default_x if default_x is not None else WORLD_W*0.24)
+    kept=[]
+    seen_required=set()
+    for kc in keycard_pickups:
+        if kc.keycard_type in required:
+            if kc.keycard_type in seen_required:
+                continue
+            if not keycard_pickup_reachable(kc,platforms,water_zones,tunnels):
+                preferred_x=preferred_keycard_spawn_x(kc.keycard_type,terminals_list,entrances_list,default_x)
+                kc=place_keycard_on_reachable_platform(preferred_x,kc.keycard_type,platforms,water_zones,tunnels)
+            seen_required.add(kc.keycard_type)
+        kept.append(kc)
+    for keycard_type in required:
+        if keycard_type in seen_required:
+            continue
+        preferred_x=preferred_keycard_spawn_x(keycard_type,terminals_list,entrances_list,default_x)
+        kept.append(place_keycard_on_reachable_platform(preferred_x,keycard_type,platforms,water_zones,tunnels))
+        seen_required.add(keycard_type)
+    keycard_pickups[:]=kept
 
 def spawn_terminal_laser_barriers(level_num,terminal_x,spike_traps,platforms,water_zones,tunnels,after_terminal=False):
     if lasers_disabled_for_level(level_num): return
@@ -7176,6 +7474,7 @@ def generate_world(level_num, base_seed=None):
     spawn_conveyor_elites(enemies_list,moving_plats,level_num,rng)
     filter_unreachable_world_coins(coins,platforms,moving_plats,water_zones,tunnels,fly_zones)
     validate_authored_terminal_positions(terminals,platforms,water_zones,tunnels,WORLD_W)
+    ensure_required_keycards(terminals,hidden_room_entrances,platforms,water_zones,tunnels,WORLD_W*0.24)
     avoid_weapon_hud_world_rewards(coins+chests+powerups,WORLD_W)
     debug_print("Level:", level_num)
     debug_print("World width:", WORLD_W)
@@ -7200,11 +7499,12 @@ def build_checkpoints():
 
         Checkpoint(int(WORLD_W*0.50)),
 
-        Checkpoint(int(WORLD_W*0.75)),
-
-        Checkpoint(boss_x_world-600)
+        Checkpoint(int(WORLD_W*0.75))
 
     ]
+
+    if current_difficulty() != "nightmare":
+        checkpoints.append(Checkpoint(boss_x_world-600))
 
     current_checkpoint = None
 
@@ -7274,7 +7574,7 @@ btn_settings =MenuButton(CX-140,380,280,36,"PENGATURAN",TEAL)
 btn_stats_m  =MenuButton(CX-140,420,280,36,"STATISTIK",CYAN)
 btn_quit_m   =MenuButton(CX-140,460,280,36,"KELUAR",RED)
 btn_resume_p =MenuButton(CX-120,122,240,42,"LANJUT",CYAN)
-btn_save_p   =MenuButton(CX-120,168,240,42,"SIMPAN GAME",(60,200,160),icon_surf=get_save_icon())
+btn_save_p   =MenuButton(CX-120,168,240,42,tr("pause.save_game"),TEAL)
 btn_shop_p   =MenuButton(CX-120,214,240,42,"$  TOKO",GOLD)
 btn_restart  =MenuButton(CX-120,260,240,42,"ULANG LEVEL",ORANGE)
 btn_settings_p=MenuButton(CX-120,306,240,42,"PENGATURAN",TEAL)
@@ -7301,7 +7601,7 @@ def sync_ui_texts():
     btn_save_info.text=tr("menu.save_data")
     btn_boss_rush.text=tr("boss_rush.title")
     btn_settings.text=tr("menu.settings")
-    btn_stats_m.text=tr("stats")
+    btn_stats_m.text=tr("stats.title")
     btn_quit_m.text=tr("menu.quit")
     btn_resume_p.text=tr("pause.resume")
     btn_save_p.text=tr("pause.save_game")
@@ -7326,7 +7626,7 @@ keycard_pickups=[]; terminals=[]; security_nodes=[]; hidden_room_entrances=[]; s
 score=0; money=0; lives=5; level=1; checkpoint=1
 multiplier=1; mult_timer=0; mult_decay_tick=0
 screen_fade=0; screen_fade_dir=0; pause_scale=0.0
-boss=None; boss_spawned=False; waiting_for_dialogue=False
+boss=None; boss_spawned=False; waiting_for_dialogue=False; boss_death_checkpoint_pending=False; boss_continue_rebuild_pending=False
 level_clear=False; level_clear_timer=0
 boss_x_world=2850
 active_boss_data=dict(BOSS_DATA[1])
@@ -7343,7 +7643,7 @@ current_checkpoint=None
 powerups=[]; active_powerups={}; combo_count=0; combo_timer=0; mission_state={}
 terminal_ui_active=False; active_terminal=None; terminal_ui_message=""; terminal_ui_rects={}
 terminal_processing_action=None; terminal_processing_timer=0; terminal_processing_duration=90
-research_log_active=False; research_log_key=""
+research_log_active=False; research_log_key=""; research_log_phase=""; research_log_timer=0
 level_start_ticks=pygame.time.get_ticks(); level_damage_taken=0; level_best_combo=0; level_clear_rank="-"; level_reward_lines=[]
 env_event_timer=0; env_event_cooldown=240; env_event_type=None
 platforms,enemies,boss_x_world,chests,moving_plats,spike_traps,tunnels,fly_zones,facility_sections,water_zones,coins,active_boss_data=generate_world(level)
@@ -7429,6 +7729,56 @@ def save_adventure_progress_fields(sd,player_obj):
     sd["hidden_rooms"]=dict(save_data.get("hidden_rooms",{}))
     sd["mission_progress"]=dict(mission_state) if isinstance(mission_state,dict) else {}
 
+def valid_weapon_list(raw_weapons):
+    weapons=[]
+    if isinstance(raw_weapons,(list,tuple)):
+        for weapon in raw_weapons:
+            if isinstance(weapon,str) and weapon in WEAPONS and weapon not in weapons:
+                weapons.append(weapon)
+    if "laser" not in weapons:
+        weapons.insert(0,"laser")
+    return weapons
+
+def save_player_weapon_state(sd,player_obj):
+    weapons=valid_weapon_list(getattr(player_obj,"weapons",["laser"]))
+    sd["weapons"]=weapons
+    sd["weapon_slots"]=list(weapons)
+    sd["current_weapon"]=player_obj.current_weapon if player_obj.current_weapon in weapons else weapons[0]
+    sd["weapon_idx"]=max(0,min(len(weapons)-1,getattr(player_obj,"weapon_idx",0)))
+    sd["weapon_ammo"]={w:int(getattr(player_obj,"ammo",{}).get(w,WEAPONS[w]["ammo"])) for w in weapons if w in WEAPONS}
+    if hasattr(player_obj,"weapon_levels"):
+        sd["weapon_levels"]=player_obj.weapon_levels
+
+def restore_player_weapon_state(player_obj,sd):
+    saved_weapons=sd.get("weapon_slots",sd.get("weapons",[]))
+    weapons=valid_weapon_list(saved_weapons)
+    for shop_weapon in sorted(getattr(player_obj,"shop_weapons",set())):
+        if shop_weapon in WEAPONS and shop_weapon not in weapons:
+            weapons.append(shop_weapon)
+    player_obj.weapons=weapons
+    saved_ammo=sd.get("weapon_ammo",{}) if isinstance(sd.get("weapon_ammo",{}),dict) else {}
+    player_obj.ammo={k:(-1 if WEAPONS[k]["ammo"]<0 else 0) for k in WEAPONS}
+    for weapon in weapons:
+        default_ammo=-1 if WEAPONS[weapon]["ammo"]<0 else WEAPONS[weapon]["ammo"]
+        try:
+            player_obj.ammo[weapon]=int(saved_ammo.get(weapon,default_ammo))
+        except (TypeError,ValueError):
+            player_obj.ammo[weapon]=default_ammo
+    cw=sd.get("current_weapon","laser")
+    if isinstance(cw,int) and 0<=cw<len(WEAPONS):
+        cw=list(WEAPONS.keys())[cw]
+    if not isinstance(cw,str) or cw not in player_obj.weapons:
+        idx=sd.get("weapon_idx",0)
+        try:
+            idx=int(idx)
+        except (TypeError,ValueError):
+            idx=0
+        cw=player_obj.weapons[max(0,min(len(player_obj.weapons)-1,idx))]
+    player_obj.weapon_idx=player_obj.weapons.index(cw)
+    wl=sd.get("weapon_levels",{})
+    if hasattr(player_obj,"weapon_levels") and isinstance(wl,dict):
+        player_obj.weapon_levels=wl
+
 
 def ensure_final_boss_mission_state():
     if not is_final_boss_level(level): return
@@ -7473,6 +7823,35 @@ def should_spawn_boss_encounter():
         return not mission_state.get("complete",False)
     return mission_complete_for_boss_gate() and mission_state.get("timer",0)<=0 and is_boss_area_unlocked()
 
+def boss_encounter_active():
+    if boss_rush_active: return False
+    return bool(boss_spawned or boss is not None or waiting_for_dialogue or boss_dialogue.active or boss_intro.active)
+
+def boss_resume_position_active():
+    if boss_rush_active: return False
+    if player.wx<=boss_x_world-720: return False
+    return mission_complete_for_boss_gate() and (is_final_boss_level(level) or is_boss_area_unlocked())
+
+def clear_boss_runtime_overlays():
+    boss_dialogue.active=False; boss_dialogue.done=False; boss_dialogue.current=0; boss_dialogue.timer=0
+    boss_intro.active=False; boss_intro.timer=0; boss_intro.boss_data=None
+    story_intro.active=False
+
+def rebuild_boss_encounter_after_load(force=False):
+    global boss,boss_spawned,waiting_for_dialogue,boss_continue_rebuild_pending,boss_death_checkpoint_pending
+    should_rebuild=force or boss_continue_rebuild_pending or boss_resume_position_active()
+    boss_continue_rebuild_pending=False
+    boss_death_checkpoint_pending=False
+    clear_boss_runtime_overlays()
+    if not should_rebuild: return False
+    boss=None; boss_spawned=False; waiting_for_dialogue=False
+    player.wx=max(0,min(WORLD_W-player.WIDTH,boss_x_world-600))
+    player.wy=max(18,min(SCREEN_H-player.HEIGHT-4,respawn_wy))
+    player.vx=0; player.vy=0; player.frozen=0; player.invincible=90
+    camera.update(player.wx)
+    start_boss_encounter()
+    return bool(boss and boss_spawned and waiting_for_dialogue and boss_dialogue.active)
+
 def start_boss_encounter():
     global boss_spawned,waiting_for_dialogue,boss
     boss_spawned=True; waiting_for_dialogue=True
@@ -7486,7 +7865,7 @@ def award_keycard(player_obj,keycard_type):
     if not keycard_type: return False
     if not hasattr(player_obj,"keycards"): player_obj.keycards=set()
     if keycard_type in player_obj.keycards:
-        toast(f"Already has {keycard_type}","KEY",TEXT_MUTED,90); return False
+        toast(tr("keycard.already_has",name=keycard_display_name(keycard_type)),terminal_toast_title("key"),TEXT_MUTED,90); return False
     player_obj.keycards.add(keycard_type); player_obj.has_keycard=True
     save_data["keycards"]=sorted(player_obj.keycards)
     if keycard_type=="Maintenance Keycard":
@@ -7496,7 +7875,7 @@ def award_keycard(player_obj,keycard_type):
     else:
         unlock_story_log("log_06")
     save_progress_state(include_session_kills=False)
-    toast(f"Obtained {keycard_type}","KEY",GOLD,130); sounds.play("coin_rare")
+    toast(tr("keycard.obtained",name=keycard_display_name(keycard_type)),terminal_toast_title("key"),GOLD,130); sounds.play("coin_rare")
     return True
 
 
@@ -7504,7 +7883,6 @@ def reconcile_current_mission_progress():
     if not mission_state: return
     kind=mission_state.get("kind")
     if mission_state.get("complete"): return
-    keycards=set(save_data.get("keycards",[])) | set(getattr(player,"keycards",set()))
     terminal_by_mission={
         "terminal_reactor":"disable_laser",
         "terminal_gate":"unlock_security_door",
@@ -7512,13 +7890,6 @@ def reconcile_current_mission_progress():
     }
     if kind in terminal_by_mission and terminal_action_completed(terminal_by_mission[kind]):
         # Only restore progress for old save files.
-        if mission_state.get("progress", 0) <= 0:
-            add_mission_progress(kind, mission_state.get("target", 1))
-    elif kind=="keycard" and "Maintenance Keycard" in keycards:
-        if mission_state.get("progress", 0) <= 0:
-            add_mission_progress(kind, mission_state.get("target", 1))
-
-    elif kind=="masterkey" and "Master Key" in keycards:
         if mission_state.get("progress", 0) <= 0:
             add_mission_progress(kind, mission_state.get("target", 1))
 
@@ -7547,7 +7918,7 @@ def get_nearby_hidden_room(player_obj):
 
 def open_terminal_interface(term):
     global terminal_ui_active,active_terminal,terminal_ui_message
-    terminal_ui_active=True; active_terminal=term; terminal_ui_message=term.message or "Select terminal command"
+    terminal_ui_active=True; active_terminal=term; terminal_ui_message=term.message or tr("terminal.select")
     sounds.play("ui_click")
 
 
@@ -7566,40 +7937,25 @@ def handle_player_interaction():
     return False
 
 
-def terminal_action_caption(action):
-    if action=="disable_laser": return "Disabling laser..."
-    if action=="restore_power": return "Restoring power..."
-    if action=="unlock_lab_door": return "Opening laboratory door..."
-    if action=="activate_flight_zone": return "Activating flight zone..."
-    if action=="unlock_security_vault": return "Opening security vault..."
-    if action=="unlock_security_door": return "Unlocking main gate..."
-    if action=="unlock_ventilation": return "Unlocking ventilation..."
-    if action=="disable_security_grid": return "Disabling security grid..."
-    if action=="activate_bridge": return "Extending bridge..."
-    if action=="unlock_reactor_core": return "Unlocking reactor core..."
-    if action=="unlock_boss_area": return "Opening boss area..."
-    return "Accessing terminal..."
-
-
 def start_terminal_action(action):
     global terminal_processing_action,terminal_processing_timer,terminal_ui_message
     if not active_terminal: return False
     status,reason=active_terminal.action_status(player,action)
     if status in("locked","denied"):
         active_terminal.message=reason; terminal_ui_message=reason
-        toast("ACCESS DENIED" if status=="denied" else reason,"LOCK",ORANGE,120); sounds.play("ui_click")
+        toast(tr("terminal.access_denied") if status=="denied" else reason,terminal_toast_title("lock"),ORANGE,120); sounds.play("ui_click")
         return False
     if action=="read_research_log":
         if status=="complete":
             log_key=get_level_research_log_key(level); open_research_log_screen(log_key)
-            active_terminal.message="Research log opened"; terminal_ui_message=active_terminal.message
+            active_terminal.message=tr("terminal.research_opened"); terminal_ui_message=active_terminal.message
             return True
         active_terminal.use(player,action); terminal_ui_message=active_terminal.message
         return True
     if status=="complete":
-        active_terminal.message="Already complete"; terminal_ui_message=active_terminal.message; sounds.play("ui_click")
+        active_terminal.message=tr("terminal.already_complete"); terminal_ui_message=active_terminal.message; sounds.play("ui_click")
         return False
-    terminal_processing_action=action; terminal_processing_timer=terminal_processing_duration; terminal_ui_message="ACCESSING...\n"+terminal_action_caption(action)
+    terminal_processing_action=action; terminal_processing_timer=terminal_processing_duration; terminal_ui_message=tr("terminal.accessing")+"\n"+terminal_action_caption(action)
     sounds.play("ui_click")
     return True
 
@@ -7612,22 +7968,72 @@ def update_terminal_processing():
         action=terminal_processing_action; terminal_processing_action=None
         active_terminal.use(player,action)
         if action == "disable_laser":
-            terminal_ui_message = "Laser Disabled"
+            terminal_ui_message = tr("terminal.laser_disabled")
         elif active_terminal is not None:
             terminal_ui_message = active_terminal.message
         else:
-            terminal_ui_message = "ACCESS COMPLETE"
+            terminal_ui_message = tr("terminal.access_complete")
 
 
 def close_research_log_screen():
-    global research_log_active,research_log_key
-    research_log_active=False; research_log_key=""
-
+    global research_log_active,research_log_key,research_log_phase,research_log_timer
+    research_log_active=False; research_log_key=""; research_log_phase=""; research_log_timer=0
 
 def open_research_log_screen(log_key):
-    global research_log_active,research_log_key
-    research_log_key=log_key; research_log_active=True
+    global research_log_active,research_log_key,research_log_phase,research_log_timer
+    research_log_key=log_key; research_log_active=True; research_log_phase="accessing"; research_log_timer=0; sounds.play("term_beep")
 
+def _research_log_phase_text(phase):
+    mapping={"accessing":tr("research.accessing"),"auth":tr("research.auth"),"decrypt":tr("research.decrypt"),"grant":tr("research.grant")}
+    return mapping.get(phase,"")
+
+def _research_log_classification(idx):
+    stages=["AUTHORIZED","WARNING","CLASSIFIED","OMEGA","EMERGENCY TRANSMISSION","LAST SURVIVING RECORD"]
+    return stages[min(len(stages)-1,max(0,idx-1))]
+
+def _research_log_header_y(panel,offset=0):
+    return panel.y+18+offset
+
+def _draw_research_log_static(surface,panel,entry,font_lg,font_sm,font_xs):
+    classification=_research_log_classification(int(str(research_log_key).split("_")[-1]) if research_log_key else 1)
+    title=font_lg.render(tr("research.title"),True,CYAN); surface.blit(title,(panel.centerx-title.get_width()//2,panel.y+18))
+    sub=font_xs.render(entry["division"],True,TEXT_MUTED); surface.blit(sub,(panel.centerx-sub.get_width()//2,panel.y+50))
+    cls_col=RED if classification in("OMEGA","EMERGENCY TRANSMISSION","LAST SURVIVING RECORD") else ORANGE if classification in("CLASSIFIED",) else YELLOW if classification in("WARNING",) else GREEN
+    cls=font_sm.render(classification,True,cls_col); surface.blit(cls,(panel.x+28,panel.y+72))
+    meta=[
+        (tr("research.author"),entry["author"]),(tr("research.security"),entry["clearance"]),(tr("research.project"),entry["project"]),(tr("research.date"),entry["day"]),(tr("research.log"),entry["log_num"]),
+    ]
+    my=panel.y+110
+    for label,value in meta:
+        lab=font_xs.render(label,True,TEXT_MUTED); surface.blit(lab,(panel.x+28,my))
+        val=render_fit(font_sm,str(value),WHITE,panel.w-170); surface.blit(val,(panel.x+130,my-3))
+        my+=24
+    return my+12,classification
+
+def _research_log_body_lines(entry,font_sm,panel_w):
+    body=entry["body"]
+    if entry["log_num"] in ("LOG 12","LOG 13"):
+        body=body.replace("CORE-X","CORE-X").replace("  "," ")
+    return wrap_text(body,font_sm,panel_w-70)[:6]
+
+def _research_log_glitch_alpha(log_num,phase,t):
+    if log_num<12: return 0
+    base=70 if log_num==12 else 95
+    flick=int(base+40*math.sin(t*0.19+log_num)) if phase!="grant" else int(base+55*math.sin(t*0.27+log_num*1.3))
+    return max(30,min(140,flick))
+
+def update_research_log_sequence():
+    global research_log_phase,research_log_timer
+    if not research_log_active or not research_log_phase: return
+    research_log_timer+=1
+    if research_log_phase=="accessing" and research_log_timer>=20:
+        research_log_phase="auth"; research_log_timer=0; sounds.play("term_beep")
+    elif research_log_phase=="auth" and research_log_timer>=20:
+        research_log_phase="decrypt"; research_log_timer=0; sounds.play("term_decrypt")
+    elif research_log_phase=="decrypt" and research_log_timer>=26:
+        research_log_phase="grant"; research_log_timer=0; sounds.play("term_grant")
+    elif research_log_phase=="grant" and research_log_timer>=18:
+        research_log_phase="ready"; research_log_timer=0
 
 def handle_research_log_event(event):
     if not research_log_active: return False
@@ -7637,20 +8043,47 @@ def handle_research_log_event(event):
         close_research_log_screen(); return True
     return True
 
-
 def draw_research_log_screen(surface,font_lg,font_sm,font_xs,t):
     if not research_log_active: return
     entry=get_research_log_entry(research_log_key)
     ov=pygame.Surface((SCREEN_W,SCREEN_H),pygame.SRCALPHA); ov.fill((0,0,0,190)); surface.blit(ov,(0,0))
-    panel=pygame.Rect(CX-285,SCREEN_H//2-180,570,360); draw_panel(surface,panel,CYAN,(5,8,24,246),radius=8)
-    title=font_lg.render("Research Log",True,CYAN); surface.blit(title,(panel.centerx-title.get_width()//2,panel.y+18))
-    surface.blit(render_fit(font_sm,entry["title"],WHITE,panel.w-60),(panel.x+30,panel.y+76))
-    surface.blit(render_fit(font_xs,"Author: "+entry["author"],TEXT_MUTED,panel.w-60),(panel.x+30,panel.y+112))
-    surface.blit(render_fit(font_xs,entry["day"],TEXT_MUTED,panel.w-60),(panel.x+30,panel.y+136))
-    y=panel.y+178
-    for line in wrap_text(entry["body"],font_sm,panel.w-70)[:5]:
-        surface.blit(font_sm.render(line,True,TEXT_MAIN),(panel.x+34,y)); y+=28
-    hint=font_xs.render("SPACE / ESC = close",True,TEXT_MUTED); surface.blit(hint,(panel.centerx-hint.get_width()//2,panel.bottom-28))
+    panel=pygame.Rect(CX-300,SCREEN_H//2-190,600,380); draw_panel(surface,panel,CYAN,(5,8,24,246),radius=8)
+    if research_log_phase!="ready":
+        seq=_research_log_phase_text(research_log_phase)
+        seq_txt=font_lg.render(seq,True,CYAN if research_log_phase!="grant" else GREEN)
+        seq_txt.set_alpha(255 if research_log_phase!="decrypt" else 235)
+        y=panel.centery-18
+        if research_log_phase=="decrypt":
+            for i in range(5):
+                offx=random.randint(-2,2); offy=random.randint(-1,1)
+                surf=font_lg.render(seq,True,(120,220,255)); surf.set_alpha(max(50,170-i*20))
+                surface.blit(surf,(panel.centerx-surf.get_width()//2+offx,y+offy))
+        else:
+            surface.blit(seq_txt,(panel.centerx-seq_txt.get_width()//2,y))
+        tip=font_xs.render(tr("research.close"),True,TEXT_MUTED)
+        surface.blit(tip,(panel.centerx-tip.get_width()//2,panel.bottom-28))
+        return
+    header_y,classification=_draw_research_log_static(surface,panel,entry,font_lg,font_sm,font_xs)
+    body_lines=_research_log_body_lines(entry,font_sm,panel.w)
+    y=header_y
+    log_num=int(str(entry["log_num"]).split()[-1]) if entry.get("log_num") else 1
+    for i,line in enumerate(body_lines):
+        alpha=255
+        if log_num>=12 and i>=len(body_lines)-2:
+            alpha=_research_log_glitch_alpha(log_num,classification,t)
+        txt=font_sm.render(line,True,TEXT_MAIN); txt.set_alpha(alpha)
+        if log_num>=12 and i==len(body_lines)-1:
+            shift=random.randint(-4,4) if (t//3)%2==0 else 0
+            surface.blit(txt,(panel.x+34+shift,y))
+            if log_num==13 and (t//5)%3!=0:
+                cut=font_sm.render(tr("research.transmission_lost"),True,RED); cut.set_alpha(120)
+
+                surface.blit(cut,(panel.centerx-cut.get_width()//2,y+22))
+                break
+        else:
+            surface.blit(txt,(panel.x+34,y))
+        y+=28
+    hint=font_xs.render(tr("research.close"),True,TEXT_MUTED); surface.blit(hint,(panel.centerx-hint.get_width()//2,panel.bottom-28))
 
 
 def handle_terminal_ui_event(event):
@@ -7680,7 +8113,7 @@ def draw_terminal_interface(surface,font_lg,font_sm,font_xs,t):
     terminal_ui_rects={}
     ov=pygame.Surface((SCREEN_W,SCREEN_H),pygame.SRCALPHA); ov.fill((0,0,0,170)); surface.blit(ov,(0,0))
     panel=pygame.Rect(CX-250,SCREEN_H//2-150,500,300); draw_panel(surface,panel,CYAN,(5,8,24,242),radius=8)
-    title=font_lg.render("TERMINAL",True,CYAN); surface.blit(title,(panel.centerx-title.get_width()//2,panel.y+16))
+    title=font_lg.render(tr("terminal.title"),True,CYAN); surface.blit(title,(panel.centerx-title.get_width()//2,panel.y+16))
     ident=font_xs.render(active_terminal.terminal_id.upper(),True,TEXT_MUTED); surface.blit(ident,(panel.centerx-ident.get_width()//2,panel.y+54))
     y=panel.y+88
     for i,action in enumerate(active_terminal.actions):
@@ -7691,17 +8124,17 @@ def draw_terminal_interface(surface,font_lg,font_sm,font_xs,t):
         r=pygame.Rect(panel.x+34,y+i*42,panel.w-68,32); terminal_ui_rects[i]=r
         pygame.draw.rect(surface,(12,18,34),r,border_radius=5)
         pygame.draw.rect(surface,col,r,border_radius=5,width=1)
-        label=f"{i+1}. {data.get('label',action)}"
+        label=f"{i+1}. {terminal_action_label(action)}"
         surface.blit(render_fit(font_sm,label,col,250),(r.x+12,r.y+6))
         surface.blit(render_fit(font_xs,reason,TEXT_MUTED if status!="ready" else TEXT_MAIN,135),(r.right-145,r.y+9))
-    msg=terminal_ui_message or "Select terminal command"
+    msg=terminal_ui_message or tr("terminal.select")
     if terminal_processing_action:
         bar_w=panel.w-68; bar_y=panel.bottom-68; frac=1.0-terminal_processing_timer/max(1,terminal_processing_duration)
         pygame.draw.rect(surface,(12,18,36),(panel.x+34,bar_y,bar_w,7),border_radius=3)
         pygame.draw.rect(surface,CYAN,(panel.x+34,bar_y,int(bar_w*frac),7),border_radius=3)
     for mi,line in enumerate(str(msg).split("\n")[:3]):
         surface.blit(render_fit(font_xs,line,ORANGE if "DENIED" in line else TEXT_MAIN,panel.w-50),(panel.x+25,panel.bottom-48+mi*14))
-    hint=font_xs.render("1-9 / Click = run command   ESC = close",True,TEXT_MUTED)
+    hint=font_xs.render(tr("terminal.hint"),True,TEXT_MUTED)
     surface.blit(hint,(panel.centerx-hint.get_width()//2,panel.bottom-22))
 
 
@@ -7717,7 +8150,7 @@ def draw_main_gate_mission_indicator(surface,cam,font_xs,t):
     else: px=int(gx)
     py=96
     pygame.draw.polygon(surface,col,[(px,py),(px-8,py+16),(px+8,py+16)])
-    label=font_xs.render("MAIN GATE",True,col)
+    label=font_xs.render(tr("terminal.main_gate"),True,col)
     surface.blit(label,(px-label.get_width()//2,py+20))
 
 
@@ -7725,7 +8158,7 @@ def draw_interaction_hint(surface,font_xs):
     if terminal_ui_active: return
     target=get_nearby_terminal(player) or get_nearby_hidden_room(player)
     if not target: return
-    txt="E  TERMINAL" if isinstance(target,Terminal) else "E  SECRET ACCESS"
+    txt=tr("terminal.interact_terminal") if isinstance(target,Terminal) else tr("terminal.secret_access")
     label=font_xs.render(txt,True,CYAN)
     pygame.draw.rect(surface,(5,8,24,210),(CX-label.get_width()//2-12,SCREEN_H-78,label.get_width()+24,24),border_radius=5)
     surface.blit(label,(CX-label.get_width()//2,SCREEN_H-72))
@@ -7753,7 +8186,6 @@ def start_new_game(world_seed=None):
     apply_permanent_unlocks(player)
     apply_shop_upgrades(player)
     sync_adventure_progress_from_save(player)
-    reconcile_current_mission_progress()
 
     # Spawn di awal level
     respawn_wx = player.wx
@@ -7825,8 +8257,8 @@ def _load_game_state(sd):
     player.reset()
     apply_permanent_unlocks(player)
     apply_shop_upgrades(player)
+    restore_player_weapon_state(player,sd)
     sync_adventure_progress_from_save(player)
-    reconcile_current_mission_progress()
 
     respawn_wx,respawn_wy=normalize_respawn_spot(sd.get("respawn_x",120.0),sd.get("respawn_y",480.0))
     filter_generated_rewards_before_checkpoint(respawn_wx)
@@ -7844,26 +8276,13 @@ def _load_game_state(sd):
     player.MAX_HP=max(3,sd.get("max_hp",player.MAX_HP))
     player.hp=min(sd.get("hp",player.MAX_HP),player.MAX_HP)
 
-    cw=sd.get("current_weapon","laser")
-    if isinstance(cw,str) and cw in player.weapons:
-        player.weapon_idx=player.weapons.index(cw)
-    elif isinstance(cw,int) and cw>=0 and cw<len(WEAPONS):
-        wk=list(WEAPONS.keys())[cw]
-        if wk in player.weapons:
-            player.weapon_idx=player.weapons.index(wk)
-
-    if hasattr(player,"weapon_levels"):
-        wl=sd.get("weapon_levels",{})
-        if isinstance(wl,dict):
-            player.weapon_levels=wl
-
     saved_mission=sd.get("mission_progress",{})
     expected=mission_definition_for_level(level)
     if (not is_final_boss_level(level)) and isinstance(saved_mission,dict) and saved_mission.get("kind")==expected.get("kind"):
         mission_state.clear(); mission_state.update(saved_mission)
     save_data.update(sd)
     ensure_final_boss_mission_state()
-    reconcile_current_mission_progress()
+    return rebuild_boss_encounter_after_load()
 
 def continue_game():
     global session_stats,current_save_file,play_time_accum
@@ -7874,7 +8293,7 @@ def continue_game():
         debug_print(f"[Continue] No last_played save, falling back to newest: {fname}")
     if not fname:
         debug_print("[Continue] FAILED: No save files found at all")
-        toast("Tidak ada data save","\u26A0",ORANGE,120)
+        toast(tr("save.no_data"),"\u26A0",ORANGE,120)
         return
     debug_print(f"[Continue] Loading save: {fname}")
     current_save_file=fname; play_time_accum=0
@@ -7883,12 +8302,15 @@ def continue_game():
     sd=load_save(fname)
     if not sd.get("has_save"):
         debug_print(f"[Continue] FAILED: Save {fname} has has_save=False")
-        toast("Save tidak valid","\u26A0",ORANGE,120)
+        toast(tr("save.invalid"),"\u26A0",ORANGE,120)
         return
     debug_print(f"[Continue] Save loaded: level={sd.get('last_level')}, respawn=({sd.get('respawn_x')},{sd.get('respawn_y')})")
-    _load_game_state(sd)
-    debug_print(f"[Continue] Game state restored, scene=level_intro, level={level}")
-    start_level_intro(level)
+    boss_restored=_load_game_state(sd)
+    debug_print(f"[Continue] Game state restored, boss_restored={boss_restored}, level={level}")
+    if boss_restored:
+        transition_to("playing")
+    else:
+        start_level_intro(level)
 
 def restart_level():
     global p_bullets,e_bullets,pixels,chests,coins,platforms,enemies
@@ -7912,8 +8334,58 @@ def restart_level():
     mult_decay_tick=0
     transition_to("playing")
 
+def reset_level_after_boss_death():
+    global p_bullets,e_bullets,pixels,chests,coins,platforms,enemies
+    global multiplier,mult_timer,mult_decay_tick,boss,boss_spawned,boss_x_world,camera,waiting_for_dialogue,active_boss_data
+    global moving_plats,spike_traps,tunnels,fly_zones,facility_sections,water_zones,session_kills,respawn_wx,respawn_wy,powerups,active_powerups,combo_count,combo_timer,current_checkpoint
+    collectible_state=snapshot_collectible_state()
+    p_bullets=[]; e_bullets=[]; pixels=[]; chests=[]; coins=[]; powerups=[]; active_powerups={}; combo_count=0; combo_timer=0
+    platforms,enemies,boss_x_world,chests,moving_plats,spike_traps,tunnels,fly_zones,facility_sections,water_zones,coins,active_boss_data=generate_world(level,save_data.get("world_seed"))
+    restore_collectible_state(collectible_state)
+    build_checkpoints()
+    start_level_mission(level)
+    reset_level_stats()
+    reset_environment_event()
+    boss=None; boss_spawned=False; waiting_for_dialogue=False; session_kills=0
+    camera=Camera()
+    player.reset()
+    apply_permanent_unlocks(player)
+    apply_shop_upgrades(player)
+    respawn_wx,respawn_wy=player.wx,player.wy
+    current_checkpoint=None
+    player.hp=player.MAX_HP; player.invincible=180; player.frozen=0
+    player.vx=0; player.vy=0; player.fly_mode=False; player.fly_thrust=False; player.gliding=False; player.jump_held=False; player.glide_held=False; player.glide_lockout=0; player.fly_buffer=0
+    multiplier=1; mult_timer=0; mult_decay_tick=0
+    if boss_dialogue.active: boss_dialogue.skip_all()
+    if boss_intro.active: boss_intro.skip()
+    camera.update(player.wx)
+    transition_to("playing")
+
+def restart_normal_boss_fight_after_death():
+    global boss,boss_spawned,waiting_for_dialogue,p_bullets,e_bullets,pixels,camera,multiplier,mult_timer,mult_decay_tick
+    p_bullets=[]; e_bullets=[]; pixels=[]
+    boss=None; boss_spawned=False; waiting_for_dialogue=False
+    player.wx=max(0,min(WORLD_W-player.WIDTH,respawn_wx)); player.wy=max(18,min(SCREEN_H-player.HEIGHT-4,respawn_wy))
+    player.vx=0; player.vy=0; player.hp=player.MAX_HP; player.frozen=0
+    player.invincible=180; player.fly_mode=any(fz.contains_for_mode(player.wx+player.WIDTH//2,False) for fz in fly_zones); player.fly_thrust=False; player.gliding=False; player.jump_held=False; player.glide_held=False; player.glide_lockout=0; player.fly_buffer=0
+    multiplier=1; mult_timer=0; mult_decay_tick=0; camera=Camera(); camera.update(player.wx)
+    if boss_dialogue.active: boss_dialogue.skip_all()
+    if boss_intro.active: boss_intro.skip()
+    transition_to("playing")
+
 def respawn():
-    global p_bullets,e_bullets,pixels,camera,multiplier,mult_timer,mult_decay_tick,waiting_for_dialogue
+    global p_bullets,e_bullets,pixels,camera,multiplier,mult_timer,mult_decay_tick,waiting_for_dialogue,boss_death_checkpoint_pending
+    if boss_death_checkpoint_pending:
+        diff=current_difficulty()
+        boss_death_checkpoint_pending=False
+        if diff in ("hard","nightmare"):
+            reset_level_after_boss_death()
+            print(f"[RESPAWN] boss death reset to level start ({diff})")
+            return
+        if diff=="normal":
+            restart_normal_boss_fight_after_death()
+            print("[RESPAWN] boss fight restarted from checkpoint (normal)")
+            return
     p_bullets=[]; e_bullets=[]; pixels=[]
     player.wx=max(0,min(WORLD_W-player.WIDTH,respawn_wx)); player.wy=max(18,min(SCREEN_H-player.HEIGHT-4,respawn_wy))
     player.vx=0; player.vy=0; player.hp=player.MAX_HP; player.frozen=0
@@ -7928,7 +8400,8 @@ def update_respawn_spot():
     return
 
 def player_died():
-    global lives,combo_count,combo_timer
+    global lives,combo_count,combo_timer,boss_death_checkpoint_pending
+    boss_death_checkpoint_pending=boss_encounter_active()
     lives-=1
     add_session_stat("total_deaths",1)
     combo_count=0; combo_timer=0
@@ -7940,8 +8413,9 @@ def player_died():
     transition_to("dead")
 
 def do_save():
-    global current_save_file,play_time_accum
+    global current_save_file,play_time_accum,boss_continue_rebuild_pending
     play_time_accum=0
+    boss_continue_rebuild_pending=boss_encounter_active()
     flush_session_stats()
     save_progress_state()
     btn_continue.disabled=False
@@ -7955,9 +8429,11 @@ def do_load(slot=None):
     current_save_file=slot; play_time_accum=0
     save_last_played_save(slot)
     sd=load_save(slot)
-    _load_game_state(sd)
+    boss_restored=_load_game_state(sd)
     session_kills=sd.get("total_kills",0)
-    boss=None; boss_spawned=False; waiting_for_dialogue=False; level_clear=False
+    if not boss_restored:
+        boss=None; boss_spawned=False; waiting_for_dialogue=False
+    level_clear=False
     transition_to("playing")
 
 def format_play_time(seconds):
@@ -8059,11 +8535,11 @@ def update_ending_sequence():
     if scene!="ending": return
     ending_timer+=1
     if ending_phase=="destruction" and ending_timer>=150:
-        ending_phase="fade"; ending_timer=0
+        ending_phase="fade"; ending_timer=0; sounds.play_bgm("emotional")
     elif ending_phase=="fade" and ending_timer>=90:
         ending_phase="dialogue"; ending_timer=0
-    elif ending_phase=="dialogue" and ending_timer>=270:
-        ending_phase="credits"; ending_timer=0; ending_scroll=float(SCREEN_H+50)
+    elif ending_phase=="dialogue" and ending_timer>=420:
+        ending_phase="credits"; ending_timer=0; ending_scroll=float(SCREEN_H+50); sounds.play_bgm("credits")
     elif ending_phase=="credits":
         min_scroll,max_scroll=ending_credit_scroll_bounds()
         ending_scroll=clamp_value(ending_scroll-0.72,min_scroll,max_scroll)
@@ -8124,13 +8600,13 @@ def draw_corex_destruction(surface,t):
 
 def draw_ending_dialogue(surface,t):
     draw_text(surface,tr("ending.title"),font_lg,CX,96,CYAN,center=True)
-    lines=[tr("ending.line1"),tr("ending.line2"),tr("ending.line3")]
+    lines=[tr("ending.line1"),tr("ending.line2"),tr("ending.line3"),tr("ending.line4"),tr("ending.line5")]
     for i,line in enumerate(lines):
-        alpha=min(255,max(0,(ending_timer-i*42)*6))
-        txt=font_sm.render(line,True,TEXT_MAIN); txt.set_alpha(alpha)
-        surface.blit(txt,(CX-txt.get_width()//2,190+i*42))
-    score_txt=font_md.render(tr("ending.score",score=score),True,YELLOW); score_txt.set_alpha(min(255,max(0,(ending_timer-120)*5)))
-    surface.blit(score_txt,(CX-score_txt.get_width()//2,355))
+        alpha=min(255,max(0,(ending_timer-i*56)*6))
+        txt=render_fit(font_sm,line,TEXT_MAIN,SCREEN_W-120); txt.set_alpha(alpha)
+        surface.blit(txt,(CX-txt.get_width()//2,180+i*38))
+    score_txt=font_md.render(tr("ending.score",score=score),True,YELLOW); score_txt.set_alpha(min(255,max(0,(ending_timer-160)*5)))
+    surface.blit(score_txt,(CX-score_txt.get_width()//2,345))
 
 def draw_ending_credits(surface):
     y=ending_scroll
@@ -8314,7 +8790,7 @@ def draw_top_hud(surface,player,score,money,multiplier,level,enemies,boss_spawne
             surface.blit(cm,(cx0+(cw-cm.get_width())//2,siy+si.get_height()+2))
 
     ry=py+44
-    bl=font_xs.render("BEST",True,TEXT_MUTED)
+    bl=font_xs.render(tr("hud.best"),True,TEXT_MUTED)
     bv=font_sm.render(f"{save_data.get('high_score',0):06d}",True,NEON_CYAN)
     surface.blit(bl,(cx0,ry))
     surface.blit(bv,(cx0+bl.get_width()+4,ry+1))
@@ -8338,11 +8814,11 @@ def draw_top_hud(surface,player,score,money,multiplier,level,enemies,boss_spawne
     pygame.draw.rect(btn_bg,(40,30,10,180) if btn_hover else (20,16,6,140),(0,0,btn_rect.w,btn_rect.h),border_radius=3)
     surface.blit(btn_bg,btn_rect.topleft)
     pygame.draw.rect(surface,GOLD,btn_rect,border_radius=3,width=2 if btn_hover else 1)
-    btn_txt=render_fit(font_xs,"SHOP",NEON_YELLOW,btn_rect.w-6)
+    btn_txt=render_fit(font_xs,tr("shop.title"),NEON_YELLOW,btn_rect.w-6)
     surface.blit(btn_txt,(btn_rect.centerx-btn_txt.get_width()//2,btn_rect.centery-btn_txt.get_height()//2))
     SHOP_HUD_RECT=btn_rect
     ry3=py+22
-    si_list=[(f"ENEMIES: {len(enemies)}",NEON_RED if boss_spawned else NEON_ORANGE),(f"POS: {int(player.wx)}",NEON_CYAN)]
+    si_list=[(tr("hud.enemies_raw",count=len(enemies)),NEON_RED if boss_spawned else NEON_ORANGE),(tr("hud.pos",pos=int(player.wx)),NEON_CYAN)]
     sx2=rx0; sy2=ry3
     for txt2,col2 in si_list:
         im=font_xs.render(txt2,True,col2)
@@ -8350,7 +8826,7 @@ def draw_top_hud(surface,player,score,money,multiplier,level,enemies,boss_spawne
         sx2+=im.get_width()+12
     ms=tr("hud.mode.fly") if player.fly_mode else(tr("hud.mode.glide") if player.gliding else tr("hud.mode.run"))
     mc=NEON_CYAN if player.fly_mode else(NEON_GREEN if player.gliding else TEXT_MAIN)
-    md=font_xs.render(f"MODE: {ms}",True,mc)
+    md=font_xs.render(tr("hud.mode",mode=ms),True,mc)
     surface.blit(md,(sx2,sy2))
 
 def draw_mission_hud(surface,font_xs,font_sm):
@@ -8359,11 +8835,11 @@ def draw_mission_hud(surface,font_xs,font_sm):
     mc=NEON_GREEN if mission_state.get("complete") else NEON_CYAN
     r=pygame.Rect(HUD_MARGIN,y,MISSION_W,MISSION_H)
     draw_panel(surface,r,mc,(5,8,24,190),radius=6)
-    title=mission_state.get("title","Mission")
-    draw_fit_text(surface,"MISSION",font_xs,pygame.Rect(r.x+8,r.y+4,r.w-16,10),TEXT_MUTED,shadow=False)
+    title=mission_display_title()
+    draw_fit_text(surface,tr("mission.header"),font_xs,pygame.Rect(r.x+8,r.y+4,r.w-16,10),TEXT_MUTED,shadow=False)
     draw_fit_text(surface,title,font_sm,pygame.Rect(r.x+8,r.y+14,r.w-16,14),mc,shadow=False)
     pg=mission_state.get('progress',0); tg=mission_state.get('target',1)
-    status="Mission Complete" if mission_state.get("complete") else f"Progress  {pg} / {tg}"
+    status=tr("mission.complete") if mission_state.get("complete") else tr("mission.progress",progress=pg,target=tg)
     pf=font_xs.render(status,True,NEON_GREEN if mission_state.get("complete") else TEXT_MAIN)
     surface.blit(pf,(r.x+8,r.y+29))
     by2=r.y+43; bw2=r.w-16; bh2=4
@@ -8388,8 +8864,8 @@ def draw_weapon_panel(surface,player,font_xs,font_sm):
     draw_fit_text(surface,wd["name"],font_sm,pygame.Rect(px,py,cw,18),wc,shadow=False)
     amc=TEXT_MAIN if av!=0 else DANGER_TEXT
     hw=cw//2-6
-    draw_fit_text(surface,f"Ammo : {as_}",font_xs,pygame.Rect(px,py+28,hw,12),amc,shadow=False)
-    draw_fit_text(surface,f"Status : {et}",font_xs,pygame.Rect(px+hw+12,py+28,hw,12),ec,shadow=False)
+    draw_fit_text(surface,tr("weapon.hud.ammo",ammo=as_),font_xs,pygame.Rect(px,py+28,hw,12),amc,shadow=False)
+    draw_fit_text(surface,tr("weapon.hud.status",status=et),font_xs,pygame.Rect(px+hw+12,py+28,hw,12),ec,shadow=False)
     sw=int((ww-36)//max(1,len(player.weapons[:4])))
     sy2=wy0+wh-28
     total_slots_w=len(player.weapons[:4])*sw
@@ -8650,7 +9126,7 @@ def draw_hud(surface,player,lives,score,money,level,enemies,boss_spawned,checkpo
         pygame.draw.rect(cb,(30,12,8,160),(0,0,cr.w,cr.h),border_radius=4)
         surface.blit(cb,cr.topleft)
         pygame.draw.rect(surface,NEON_ORANGE,cr,border_radius=4,width=1)
-        draw_center_fit(surface,f"COMBO x{combo_count}",font_xs,cr,NEON_ORANGE,shadow=False)
+        draw_center_fit(surface,tr("combo.mult",count=combo_count),font_xs,cr,NEON_ORANGE,shadow=False)
     x=HUD_MARGIN
     y=MISSION_Y+MISSION_H+4+(22 if combo_count>=2 else 0)
     for kind,timer in active_powerups.items():
@@ -8738,16 +9214,18 @@ while running:
 
         if story_intro.active:
             debug_print(f"[EVENT] story_intro.active=True scene={scene}")
-            if event.type==pygame.MOUSEBUTTONDOWN and event.button==1: story_intro.skip(); debug_print(f"[STORY] skip() called")
-            if event.type==pygame.KEYDOWN and event.key==pygame.K_SPACE: story_intro.skip(); debug_print(f"[STORY] skip() called")
+            story_intro.handle_event(event)
             continue
 
         if boss_dialogue.active:
             debug_print(f"[EVENT] boss_dialogue.active=True scene={scene}")
             if event.type==pygame.KEYDOWN:
-                if event.key==pygame.K_SPACE: boss_dialogue.advance()
+                if event.key==pygame.K_SPACE: boss_dialogue.complete_current_sentence()
+                if event.key in(pygame.K_RETURN,pygame.K_e): boss_dialogue.continue_dialogue()
                 if event.key==pygame.K_ESCAPE: boss_dialogue.skip_all()
-            if event.type==pygame.MOUSEBUTTONDOWN and event.button==1: boss_dialogue.advance()
+            if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
+                if boss_dialogue.current_text_complete(): boss_dialogue.continue_dialogue()
+                else: boss_dialogue.complete_current_sentence()
             continue
 
         if boss_intro.active:
@@ -8980,7 +9458,7 @@ while running:
                             show_boss_rush_select=False
                             sounds.play("ui_click")
                         else:
-                            toast("Pilih minimal 1 boss!","\u26A0",ORANGE,90)
+                            toast(tr("boss_rush.select_one"),"\u26A0",ORANGE,90)
                         handled=True
                     else:
                         for bid,btn_r in card_rects.items():
@@ -9065,10 +9543,12 @@ while running:
 
     opening.update()
     tutorial.update()
-    story_intro.update(); boss_dialogue.update(); boss_intro.update(); update_terminal_processing(); shake.update()
+    story_intro.update(); boss_dialogue.update(); boss_intro.update(); update_terminal_processing(); update_research_log_sequence(); shake.update()
     if terminal_warning_flash>0: terminal_warning_flash=max(0,terminal_warning_flash-1)
     if scene=="level_intro" and not story_intro.active:
         transition_to("playing")
+        screen_fade=255
+        screen_fade_dir=-1
         if pending_tutorial_after_intro:
             pending_tutorial_after_intro=False
             tutorial.start()
@@ -9298,7 +9778,7 @@ while running:
                     if ch.alive and pr.colliderect(ch.get_rect()):
                         ch.alive=False
                         add_mission_progress("chests",1); add_session_stat("total_chests",1)
-                        if ch.type=="secret": add_mission_progress("secrets",1); add_session_stat("total_secrets",1); unlock_achievement("secret_finder","Secret Finder"); spawn_score(ch.wx+12,ch.wy-18,"SECRET CACHE")
+                        if ch.type=="secret": add_mission_progress("secrets",1); add_session_stat("total_secrets",1); unlock_achievement("secret_finder","Secret Finder"); spawn_score(ch.wx+12,ch.wy-18,tr("chest.secret_cache"))
                         if ch.content=="hp":
                             player.hp=min(player.MAX_HP,player.hp+2); spawn_pixels(ch.wx,ch.wy,(29,158,117),12)
                             sounds.play("chest")
@@ -9326,7 +9806,7 @@ while running:
                     waiting_for_dialogue=False
                     bd=dict(boss.data if boss else active_boss_data); bd["accent"]=get_level_data(level)["accent"]
                     boss_intro.trigger(bd,level); shake.trigger(10,20)
-                    toast(f"BOSS: {active_boss_data['name']}","\u2620",NEON_RED,150)
+                    toast(tr("boss.toast",name=active_boss_data['name']),"\u2620",NEON_RED,150)
 
                 for b in list(p_bullets):
                     if not b.alive: continue
@@ -9400,6 +9880,7 @@ while running:
                                 next_level=min(level+1,len(LEVEL_ORDER))
                                 sd["total_kills"]+=session_kills; sd["last_level"]=next_level; sd["last_checkpoint"]=next_level
                                 sd["has_save"]=True; sd["money"]=money; sd["shop_upgrades"]=get_shop_upgrade_levels()
+                                save_player_weapon_state(sd,player)
                                 save_adventure_progress_fields(sd,player)
                                 sd["timestamp"]=datetime.now().isoformat()
                                 if write_save(current_save_file,sd): save_data.update(sd); session_kills=0
@@ -9500,7 +9981,6 @@ while running:
             platforms, enemies, boss_x_world, chests, moving_plats, spike_traps, tunnels, fly_zones, facility_sections, water_zones, coins, active_boss_data = generate_world(level, save_data.get("world_seed"))
             build_checkpoints()
             start_level_mission(level)
-            reconcile_current_mission_progress()
             reset_level_stats()
             reset_environment_event()
             camera = Camera()
@@ -9520,9 +10000,8 @@ while running:
             start_level_intro(level)
             debug_print("[2] AFTER INTRO:", player.wx, player.wy)
 
-            screen_fade = 255
-            screen_fade_dir = -1
-            screen_fade = 255
+            screen_fade = 0
+            screen_fade_dir = 0
 
     update_ending_sequence()
 
@@ -9770,7 +10249,7 @@ while running:
             inp_r=pygame.Rect(px_s+30,py_s+66,pw-60,32)
             pygame.draw.rect(screen,(40,45,60),inp_r,border_radius=4)
             pygame.draw.rect(screen,CYAN,inp_r,border_radius=4,width=1)
-            display_text=new_game_name if new_game_name else "Enter Save Name..."
+            display_text=new_game_name if new_game_name else tr("save.name_placeholder")
             in_txt=font_sm.render(display_text,True,WHITE if new_game_name else TEXT_DIM)
             screen.blit(in_txt,(inp_r.x+8,inp_r.y+4))
             if new_game_name and (t//500)%2==0:
@@ -9817,7 +10296,7 @@ while running:
             screen.blit(pct,(bar_x+bar_w+10,bar_y+2))
             # Best score
             best_br=save_data.get("total_boss_rush_waves",0)
-            best_t=font_xs.render(f"BEST: {best_br} waves",True,TEXT_MUTED)
+            best_t=font_xs.render(f"{tr('boss_rush.best',score=best_br)} {tr('boss_rush.waves')}",True,TEXT_MUTED)
             screen.blit(best_t,(hx+hw-best_t.get_width()-12,hy+7))
 
             # Reserve bottom area for action buttons (48px)
@@ -10132,7 +10611,7 @@ while running:
                     ck=font_xs.render(tr("level.clear.save"),True,GREEN)
                     rank_col=GOLD if level_clear_rank=="S" else CYAN if level_clear_rank=="A" else ORANGE if level_clear_rank=="B" else TEXT_MUTED
                     elapsed=(pygame.time.get_ticks()-level_start_ticks)//1000
-                    rk=font_sm.render(f"RANK {level_clear_rank}   DMG {level_damage_taken}   COMBO {level_best_combo}   {elapsed}s",True,rank_col)
+                    rk=font_sm.render(tr("hud.rank",rank=level_clear_rank,dmg=level_damage_taken,combo=level_best_combo,elapsed=elapsed),True,rank_col)
                     screen.blit(dn,(CX-dn.get_width()//2,SCREEN_H//2-58)); screen.blit(b2_t,(CX-b2_t.get_width()//2,SCREEN_H//2-18))
                     screen.blit(rk,(CX-rk.get_width()//2,SCREEN_H//2+8))
                     if level_reward_lines:

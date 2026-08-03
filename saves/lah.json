@@ -1,0 +1,122 @@
+{
+  "high_score": 29354,
+  "best_level": 3,
+  "total_plays": 4,
+  "total_kills": 282,
+  "bosses_defeated": 2,
+  "last_level": 3,
+  "last_checkpoint": 3,
+  "has_save": true,
+  "money": 139,
+  "shop_upgrades": {
+    "hp": 4,
+    "speed": 0,
+    "damage": 0,
+    "jump": 0,
+    "dash": 0,
+    "shield": 0,
+    "weaponmod": 0
+  },
+  "tutorial_seen": false,
+  "achievements": [
+    "first_blood",
+    "secret_finder",
+    "terminal_hacker",
+    "weapon_master"
+  ],
+  "completed_challenges": [
+    "L1:0:security_gate",
+    "L2:0:heat_elevator"
+  ],
+  "lives": 1,
+  "hp": 9,
+  "max_hp": 9,
+  "current_weapon": "laser",
+  "weapon_levels": {},
+  "mission_progress": {
+    "kind": "keycard",
+    "title": "Obtain Maintenance Keycard",
+    "target": 1,
+    "progress": 0,
+    "complete": false,
+    "timer": 0,
+    "rewarded": false
+  },
+  "respawn_x": 120.0,
+  "respawn_y": 480.0,
+  "keycards": [
+    "Maintenance Keycard"
+  ],
+  "story_logs": [
+    "log_01",
+    "log_02",
+    "log_03",
+    "log_04"
+  ],
+  "terminal_states": {
+    "lvl01_laser": [
+      "disable_laser",
+      "read_research_log"
+    ],
+    "boss_gate_1": [
+      "unlock_boss_area"
+    ],
+    "lvl02_power": [
+      "read_research_log",
+      "restore_power"
+    ],
+    "boss_gate_2": [
+      "unlock_boss_area"
+    ]
+  },
+  "hidden_rooms": {},
+  "timestamp": "2026-08-04T01:26:40.270999",
+  "play_time": 5449.750000000396,
+  "save_name": "lah",
+  "total_deaths": 7,
+  "total_coins": 531,
+  "total_damage_dealt": 2650,
+  "total_damage_taken": 85,
+  "total_levels_cleared": 2,
+  "total_secrets": 2,
+  "total_chests": 37,
+  "total_boss_rush_waves": 0,
+  "highest_combo": 2,
+  "total_shots_fired": 0,
+  "completed": false,
+  "settings": {
+    "vol_sfx": 0.55,
+    "vol_bgm": 0.22,
+    "mute": false,
+    "fullscreen": false,
+    "language": "id",
+    "difficulty": "hard"
+  },
+  "cosmetics": {
+    "owned_skins": [
+      "classic"
+    ],
+    "equipped_skin": "classic",
+    "owned_weapon_skins": [
+      "default"
+    ],
+    "equipped_weapon_skin": "default",
+    "owned_shop_weapons": [],
+    "owned_pets": [],
+    "equipped_pet": ""
+  },
+  "world_seed": 7673215858844987110,
+  "weapons": [
+    "laser",
+    "shotgun"
+  ],
+  "weapon_slots": [
+    "laser",
+    "shotgun"
+  ],
+  "weapon_idx": 0,
+  "weapon_ammo": {
+    "laser": -1,
+    "shotgun": 15
+  }
+}
