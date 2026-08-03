@@ -67,6 +67,7 @@ def _save_defaults():
        "total_deaths":0,"total_coins":0,"total_damage_dealt":0,"total_damage_taken":0,
        "total_levels_cleared":0,"total_secrets":0,"total_chests":0,"total_boss_rush_waves":0,
        "highest_combo":0,"total_shots_fired":0,
+        "completed":False,
         "settings":{"vol_sfx":0.55,"vol_bgm":0.22,"mute":False,"fullscreen":False,"language":"id","difficulty":"normal"},
         "cosmetics":{"owned_skins":["classic"],"equipped_skin":"classic",
                      "owned_weapon_skins":["default"],"equipped_weapon_skin":"default",
@@ -359,6 +360,7 @@ TEXT={
         "save.title":"DATA SAVE","save.high_score":"SKOR TERBAIK","save.best_level":"LEVEL TERTINGGI","save.total_plays":"TOTAL MAIN","save.total_kills":"TOTAL KILL","save.bosses":"BOSS KALAH","save.last_level":"LEVEL TERAKHIR","save.back":"KEMBALI","save.slot_empty":"Slot Kosong","save.slot_level":"Level {lv}","save.slot_score":"Skor: {s}","save.slot_coins":"Koin: {c}","save.slot_hp":"HP: {hp}/{max}","save.slot_weapon":"Senjata: {w}","save.slot_date":"{d}","save.slot_time":"Waktu: {t:.0f}m","save.load":"MUAT","save.delete":"HAPUS","save.info":"Pilih slot untuk memuat atau menghapus data",
         "save.play":"MAIN","save.view":"LIHAT DETAIL","save.play_time":"Waktu: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Kesulitan: {d}","save.weapon":"Senjata: {w}","save.overwrite_confirm":"Timpa save ini?","save.delete_confirm":"Hapus save ini?","save.yes":"YA","save.no":"TIDAK","save.select_slot":"PILIH SLOT","save.start_new":"MULAI BARU","save.rename":"GANTI NAMA","save.duplicate":"DUPLIKAT","save.new_game":"GAME BARU","save.name_placeholder":"Nama save...","save.create":"BUAT","save.cancel":"BATAL","save.name_required":"Nama tidak boleh kosong","save.rename_title":"GANTI NAMA SAVE","save.rename_placeholder":"Nama baru...","save.rename_confirm":"SIMPAN","save.duplicate_title":"Duplikat Save",
         "settings.title":"PENGATURAN","settings.sound":"SUARA","settings.display_audio":"TAMPILAN & AUDIO","settings.controls":"REFERENSI KONTROL","settings.mute":"Mute Semua Suara","settings.fullscreen":"Mode Fullscreen","settings.particles":"Partikel Efek","settings.shake":"Intensitas Shake","settings.language":"Bahasa","settings.lang_value":"Indonesia","settings.reset":"RESET AWAL","settings.save_close":"SIMPAN & TUTUP","settings.footer":"ESC = simpan & tutup","settings.sfx":"Volume SFX","settings.bgm":"Volume BGM",
+        "difficulty.title":"KESULITAN","difficulty.subtitle":"Pilih tingkat tantangan","difficulty.selected":"DIPILIH","difficulty.back":"KEMBALI","difficulty.next":"LANJUT","difficulty.close":"TUTUP","difficulty.footer":"Berlaku untuk run baru dan current run","difficulty.easy.name":"MUDAH","difficulty.normal.name":"NORMAL","difficulty.hard.name":"SULIT","difficulty.nightmare.name":"NIGHTMARE","difficulty.easy.desc":"Musuh lebih lemah. Lebih mudah dipelajari.","difficulty.normal.desc":"Seimbang untuk sebagian besar pemain.","difficulty.hard.desc":"Musuh lebih kuat. Timing harus lebih rapi.","difficulty.nightmare.desc":"Musuh sangat agresif. Hanya untuk run serius.", 
         "ctrl.move":"Bergerak","ctrl.jump":"Lompat","ctrl.shoot":"Tembak","ctrl.weapon":"Ganti Senjata","ctrl.pause":"Jeda","ctrl.save_shop":"Save / Toko","ctrl.save":"Save","ctrl.restart":"Ulang","ctrl.mute":"Mute","ctrl.volume":"Volume -/+","ctrl.fullscreen":"Fullscreen","ctrl.respawn":"Hidup Lagi","ctrl.left_click":"Klik Kiri",
         "shop.title":"TOKO","shop.coins":"{coins}","shop.tab.upgrades":"UPGRADE","shop.tab.weapon":"SENJATA","shop.tab.skins":"KULIT","shop.tab.pet":"PET","shop.tab.special":"SPESIAL","shop.weapon_skins":"KULIT SENJATA","shop.shop_weapons":"SENJATA TOKO","shop.close_hint":"ESC / Klik luar = tutup","shop.cost":"{cost}","shop.ammo":"AMMO {price}","shop.equip":"PAKAI","shop.equipped":"DIPAKAI","shop.pet_preview":"PRATINJAU","shop.buy":"BELI","shop.upgrade":"TINGKATKAN","shop.max":"MAKS","shop.select":"PILIH",
         "upg.hp.name":"MAX HP +1","upg.hp.desc":"Tambah 1 HP maksimal","upg.speed.name":"SPEED +10%","upg.speed.desc":"Gerak 10% lebih cepat","upg.damage.name":"DAMAGE +1","upg.damage.desc":"Tembak damage +1",
@@ -368,7 +370,8 @@ TEXT={
         "pause.title":"JEDA","pause.score":"Skor: {score:06d}","pause.level":"Level: {level}","pause.best":"Terbaik: {best:06d}","pause.bosses":"Boss Kalah: {bosses}","pause.tip":"TIP: B = Toko  |  ESC = Lanjut","pause.resume":"LANJUT","pause.save_game":"SIMPAN GAME","pause.shop":"$  TOKO","pause.restart":"ULANG LEVEL","pause.settings":"PENGATURAN","pause.main_menu":"MENU UTAMA","pause.saved":"Game Berhasil Disimpan",
         "dead.title":"KAMU  KALAH","dead.info":"Nyawa: {lives}   Posisi: Level {level}","dead.boss":"Boss: {name}   HP tersisa: {hp}","dead.retry":"R / Klik  -  Ulang dari posisi","dead.game_over":"R / Klik  -  Game Over",
         "gameover.new_record":"REKOR BARU!","gameover.score":"SKOR  {score:06d}","gameover.stats":"Terbaik: {best:06d}   Level: {level}   Boss: {bosses}   Main: {plays}","gameover.boss":"Level: {level}   Boss: {boss}","gameover.back":"R / Klik  -  Kembali ke Main Menu",
-        "ending.title":"CORE-X HANCUR","ending.line1":"NEXUS-7 kembali online.","ending.line2":"Unit G7 menyelesaikan misi terakhir.","ending.line3":"Stasiun terselamatkan. Sistem bebas dari CORE-X.","ending.score":"SKOR AKHIR  {score:06d}","ending.back":"Tekan tombol apa saja untuk kembali ke Main Menu",
+        "ending.title":"CORE-X HANCUR","ending.line1":"NEXUS-7 kembali online.","ending.line2":"Unit G7 menyelesaikan misi terakhir.","ending.line3":"Stasiun terselamatkan. Sistem bebas dari CORE-X.","ending.score":"SKOR AKHIR  {score:06d}","ending.back":"ENTER = kembali ke Main Menu","ending.skip":"SPACE = lewati kredit","ending.stats_title":"LAPORAN MISI SELESAI","ending.completion":"Penyelesaian","ending.difficulty":"Kesulitan","ending.play_time":"Waktu Bermain","ending.deaths":"Jumlah Kematian","ending.coins":"Koin Dikumpulkan","ending.enemies":"Musuh Dikalahkan","ending.bosses":"Boss Dikalahkan","credits.created_by":"Dibuat oleh","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Dosen Pembimbing","credits.supervisor_name":"Nama Dosen Pembimbing","credits.powered_by":"Didukung oleh","credits.thanks":"Ucapan Terima Kasih","credits.family":"Keluarga","credits.friends":"Teman-teman","credits.universitas":"Universitas Mulia","credits.thank_you":"Terima Kasih Telah Bermain",
+        "mission.header":"MISI","mission.complete":"SELESAI",
         "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"TANTANGAN BOSS","boss.challenge_level":"TANTANGAN LEVEL {level}","boss.ability":"Ability: {desc}","boss.phase":"FASE {phase}",
         "opening.start":"Tekan SPACE / Klik untuk mulai","opening.skip":"SPACE/Klik = lewati","dialogue.hint":"SPACE/Klik = lanjut  ESC = lewati",        "story.bonus":"LEVEL BONUS",
         "stats.title":"STATISTIK","stats.kills":"Total Kill","stats.deaths":"Total Mati","stats.coins":"Koin Terkumpul","stats.damage_dealt":"Damage Diberikan","stats.damage_taken":"Damage Diterima","stats.levels_cleared":"Level Diselesaikan","stats.secrets":"Rahasia Ditemukan","stats.chests":"Peti Dibuka","stats.highest_combo":"Kombo Tertinggi","stats.shots_fired":"Tembakan Dilepas","stats.boss_rush":"Gelombang Boss Rush","stats.play_time":"Waktu Bermain","stats.bosses":"Boss Dikalahkan","stats.best_level":"Level Terbaik","stats.high_score":"Skor Tertinggi","stats.total_plays":"Total Main","stats.accuracy":"Akurasi Tembak",
@@ -384,6 +387,7 @@ TEXT={
         "save.title":"SAVE DATA","save.high_score":"HIGH SCORE","save.best_level":"BEST LEVEL","save.total_plays":"TOTAL PLAYS","save.total_kills":"TOTAL KILLS","save.bosses":"BOSSES DEFEATED","save.last_level":"LAST LEVEL","save.back":"BACK","save.slot_empty":"Empty Save Slot","save.slot_level":"Level {lv}","save.slot_score":"Score: {s}","save.slot_coins":"Coins: {c}","save.slot_hp":"HP: {hp}/{max}","save.slot_weapon":"Weapon: {w}","save.slot_date":"{d}","save.slot_time":"Time: {t:.0f}m","save.load":"LOAD","save.delete":"DELETE","save.info":"Select a slot to load or delete save data",
         "save.play":"PLAY","save.view":"VIEW DETAILS","save.play_time":"Time: {t:.0f}m","save.last_played":"{d}","save.difficulty":"Difficulty: {d}","save.weapon":"Weapon: {w}","save.overwrite_confirm":"Overwrite this save?","save.delete_confirm":"Delete this save?","save.yes":"YES","save.no":"NO","save.select_slot":"SELECT SLOT","save.start_new":"START NEW GAME","save.rename":"RENAME","save.duplicate":"DUPLICATE","save.new_game":"NEW GAME","save.name_placeholder":"Save name...","save.create":"CREATE","save.cancel":"CANCEL","save.name_required":"Name cannot be empty","save.rename_title":"RENAME SAVE","save.rename_placeholder":"New name...","save.rename_confirm":"SAVE","save.duplicate_title":"Duplicate Save",
         "settings.title":"SETTINGS","settings.sound":"SOUND","settings.display_audio":"DISPLAY & AUDIO","settings.controls":"CONTROL REFERENCE","settings.mute":"Mute All Sound","settings.fullscreen":"Fullscreen Mode","settings.particles":"Particle Effects","settings.shake":"Shake Intensity","settings.language":"Language","settings.lang_value":"English","settings.reset":"RESET DEFAULT","settings.save_close":"SAVE & CLOSE","settings.footer":"ESC = save & close","settings.sfx":"SFX Volume","settings.bgm":"BGM Volume",
+        "difficulty.title":"DIFFICULTY","difficulty.subtitle":"Choose a challenge level","difficulty.selected":"SELECTED","difficulty.back":"BACK","difficulty.next":"NEXT","difficulty.close":"CLOSE","difficulty.footer":"Applies to new and current runs","difficulty.easy.name":"EASY","difficulty.normal.name":"NORMAL","difficulty.hard.name":"HARD","difficulty.nightmare.name":"NIGHTMARE","difficulty.easy.desc":"Weaker enemies. Easier to learn.","difficulty.normal.desc":"Balanced for most players.","difficulty.hard.desc":"Stronger enemies. Cleaner timing needed.","difficulty.nightmare.desc":"Aggressive enemies. For serious runs only.", 
         "ctrl.move":"Move","ctrl.jump":"Jump","ctrl.shoot":"Shoot","ctrl.weapon":"Switch Weapon","ctrl.pause":"Pause","ctrl.save_shop":"Save / Shop","ctrl.save":"Save","ctrl.restart":"Restart","ctrl.mute":"Mute","ctrl.volume":"Volume -/+","ctrl.fullscreen":"Fullscreen","ctrl.respawn":"Respawn","ctrl.left_click":"Left Click",
         "shop.title":"SHOP","shop.coins":"{coins}","shop.tab.upgrades":"UPGRADE","shop.tab.weapon":"WEAPON","shop.tab.skins":"SKIN","shop.tab.pet":"PET","shop.tab.special":"SPECIAL","shop.weapon_skins":"WEAPON SKINS","shop.shop_weapons":"SHOP WEAPONS","shop.close_hint":"ESC / Click outside = close","shop.cost":"{cost}","shop.ammo":"AMMO {price}","shop.equip":"EQUIP","shop.equipped":"EQUIPPED","shop.pet_preview":"PREVIEW","shop.buy":"BUY","shop.upgrade":"UPGRADE","shop.max":"MAX","shop.select":"SELECT",
         "upg.hp.name":"MAX HP +1","upg.hp.desc":"Increase max HP by 1","upg.speed.name":"SPEED +10%","upg.speed.desc":"Move 10% faster","upg.damage.name":"DAMAGE +1","upg.damage.desc":"Shots deal +1 damage",
@@ -393,7 +397,8 @@ TEXT={
         "pause.title":"PAUSED","pause.score":"Score: {score:06d}","pause.level":"Level: {level}","pause.best":"Best: {best:06d}","pause.bosses":"Bosses Defeated: {bosses}","pause.tip":"TIP: Press B = Shop  |  ESC = Resume","pause.resume":"RESUME","pause.save_game":"SAVE GAME","pause.shop":"$  SHOP","pause.restart":"RESTART LEVEL","pause.settings":"SETTINGS","pause.main_menu":"MAIN MENU","pause.saved":"Game Saved Successfully",
         "dead.title":"YOU  DIED","dead.info":"Lives: {lives}   Position: Level {level}","dead.boss":"Boss: {name}   HP left: {hp}","dead.retry":"R / Click  -  Retry from position","dead.game_over":"R / Click  -  Game Over",
         "gameover.new_record":"NEW RECORD!","gameover.score":"SCORE  {score:06d}","gameover.stats":"Best: {best:06d}   Level: {level}   Bosses: {bosses}   Plays: {plays}","gameover.boss":"Level: {level}   Boss: {boss}","gameover.back":"R / Click  -  Back to Main Menu",
-        "ending.title":"CORE-X DESTROYED","ending.line1":"NEXUS-7 is back online.","ending.line2":"Unit G7 completed the final mission.","ending.line3":"The station is safe. The system is free from CORE-X.","ending.score":"FINAL SCORE  {score:06d}","ending.back":"Press any key to return to Main Menu",
+        "ending.title":"CORE-X DESTROYED","ending.line1":"NEXUS-7 is back online.","ending.line2":"Unit G7 completed the final mission.","ending.line3":"The station is safe. The system is free from CORE-X.","ending.score":"FINAL SCORE  {score:06d}","ending.back":"ENTER = Return to Main Menu","ending.skip":"SPACE = Skip Credits","ending.stats_title":"MISSION COMPLETE REPORT","ending.completion":"Completion","ending.difficulty":"Difficulty","ending.play_time":"Play Time","ending.deaths":"Deaths","ending.coins":"Coins Collected","ending.enemies":"Enemies Defeated","ending.bosses":"Bosses Defeated","credits.created_by":"Created by","credits.university":"Universitas Mulia Balikpapan","credits.supervisor":"Supervisor","credits.supervisor_name":"Supervisor Name","credits.powered_by":"Powered By","credits.thanks":"Special Thanks","credits.family":"Family","credits.friends":"Friends","credits.universitas":"Universitas Mulia","credits.thank_you":"Thank You For Playing",
+        "mission.header":"MISSION","mission.complete":"COMPLETE",
         "weapon.hud.ammo":"AMMO: {ammo}","weapon.hud.on":"E: ON","weapon.hud.off":"E: OFF","boss.challenge":"BOSS CHALLENGE","boss.challenge_level":"LEVEL {level} CHALLENGE","boss.ability":"Ability: {desc}","boss.phase":"PHASE {phase}",
         "opening.start":"Press SPACE / Click to start","opening.skip":"SPACE/Click = skip","dialogue.hint":"SPACE/Click = next  ESC = skip",        "story.bonus":"BONUS LEVEL",
         "stats.title":"STATISTICS","stats.kills":"Total Kills","stats.deaths":"Total Deaths","stats.coins":"Coins Collected","stats.damage_dealt":"Damage Dealt","stats.damage_taken":"Damage Taken","stats.levels_cleared":"Levels Cleared","stats.secrets":"Secrets Found","stats.chests":"Chests Opened","stats.highest_combo":"Highest Combo","stats.shots_fired":"Shots Fired","stats.boss_rush":"Boss Rush Waves","stats.play_time":"Play Time","stats.bosses":"Bosses Defeated","stats.best_level":"Best Level","stats.high_score":"High Score","stats.total_plays":"Total Plays","stats.accuracy":"Accuracy",
@@ -4295,7 +4300,7 @@ def mission_label():
     if not mission_state:
         return ""
 
-    done = " ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦" if mission_state.get("complete") else ""
+    done = f" {tr('mission.complete')}" if mission_state.get("complete") else ""
 
     title = mission_state.get("title", "Mission")
 
@@ -4303,7 +4308,7 @@ def mission_label():
     target = mission_state.get("target", 1)
 
     return (
-    f"ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ MISSION\n"
+    f"{tr('mission.header')}\n"
     f"{title}\n"
     f"{progress} / {target}{done}"
 )
@@ -5425,7 +5430,7 @@ class SettingsScreen:
         ly2=py+176; lang_col=CYAN if self.tog["language"]=="id" else (120,190,255)
         pygame.draw.rect(surface,(18,22,40),(rx,ly2,cw,30),border_radius=6)
         pygame.draw.rect(surface,lang_col,(rx,ly2,cw,30),border_radius=6,width=2)
-        ltxt=font_sm.render(f"{tr('lang.name')}  {'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾' if current_language()=='en' else 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¾'}",True,lang_col)
+        ltxt=font_sm.render(f"{tr('settings.lang_value')}  < >",True,lang_col)
         surface.blit(ltxt,(rx+14,ly2+6))
         lhint=font_xs.render(tr("settings.language"),True,(60,70,80))
         surface.blit(lhint,(rx+cw-lhint.get_width()-12,ly2+8))
@@ -5682,9 +5687,9 @@ class AchievementScreen:
         hint=font_xs.render("ESC / Click outside = close",True,TEXT_MUTED); surface.blit(hint,(SCREEN_W//2-hint.get_width()//2,py+ph-18))
 
 class DifficultyScreen:
-    PW,PH=560,360
+    PW,PH=640,460
     def __init__(self):
-        self.active=False; self.px=SCREEN_W//2-self.PW//2; self.py=SCREEN_H//2-self.PH//2; self.rects={}
+        self.active=False; self.px=SCREEN_W//2-self.PW//2; self.py=SCREEN_H//2-self.PH//2; self.rects={}; self.button_rects={}; self.last_select_ms=0
     def open(self): self.active=True
     def close(self): self.active=False
     def handle_event(self,event):
@@ -5692,29 +5697,83 @@ class DifficultyScreen:
         if event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE: self.close(); return True
         if event.type==pygame.MOUSEBUTTONDOWN and event.button==1:
             if not pygame.Rect(self.px,self.py,self.PW,self.PH).collidepoint(event.pos): self.close(); return True
+            for action,rect in self.button_rects.items():
+                if rect.collidepoint(event.pos):
+                    self.close(); sounds.play("ui_click"); return True
             for key,rect in self.rects.items():
                 if rect.collidepoint(event.pos):
                     save_data.setdefault("settings",{})["difficulty"]=key; save_settings()
                     if key in ("hard","corex"): unlock_achievement("hard_mode","Hard Protocol")
-                    sounds.play("ui_click"); return True
+                    self.last_select_ms=pygame.time.get_ticks(); sounds.play("ui_click"); return True
         return False
     def draw(self,surface,font_lg,font_sm,font_xs,t):
         if not self.active: return
         px,py,pw,ph=self.px,self.py,self.PW,self.PH; self.rects={}
+        self.button_rects={}
         ov=pygame.Surface((SCREEN_W,SCREEN_H),pygame.SRCALPHA); ov.fill((0,0,0,185)); surface.blit(ov,(0,0))
         panel=pygame.Surface((pw,ph),pygame.SRCALPHA); panel.fill((7,9,24,246)); surface.blit(panel,(px,py))
         pygame.draw.rect(surface,CYAN,(px,py,pw,ph),border_radius=10,width=2)
         pygame.draw.rect(surface,CYAN,(px,py,pw,4),border_radius=10)
-        title=font_lg.render("DIFFICULTY",True,CYAN); surface.blit(title,(SCREEN_W//2-title.get_width()//2,py+14))
+        title=font_lg.render(tr("difficulty.title"),True,CYAN); surface.blit(title,(SCREEN_W//2-title.get_width()//2,py+14))
+        sub=font_xs.render(tr("difficulty.subtitle"),True,TEXT_MUTED); surface.blit(sub,(SCREEN_W//2-sub.get_width()//2,py+52))
         cur=current_difficulty()
-        for i,(key,data) in enumerate(DIFFICULTY_DATA.items()):
-            r=pygame.Rect(px+40,py+72+i*58,pw-80,48); self.rects[key]=r; active=key==cur; col=data["color"]
-            pygame.draw.rect(surface,(col[0]//8,col[1]//8,col[2]//8),r,border_radius=7)
-            pygame.draw.rect(surface,GOLD if active else col,r,border_radius=7,width=2 if active else 1)
-            name=font_sm.render(data["name"]+("  SELECTED" if active else ""),True,GOLD if active else col); surface.blit(name,(r.x+14,r.y+7))
-            desc=render_fit(font_xs,data["desc"],TEXT_MUTED,r.w-190); surface.blit(desc,(r.x+150,r.y+9))
-            nums=font_xs.render(f"DMG x{data['damage']:.2f}  REWARD x{data['reward']:.2f}",True,TEXT_MAIN); surface.blit(nums,(r.x+150,r.y+27))
-        hint=font_xs.render("Affects new and current runs. ESC / Click outside = close",True,TEXT_MUTED)
+        diff_keys=list(DIFFICULTY_DATA.keys())
+        card_w=250; card_h=96; gap_x=18; gap_y=14
+        grid_w=card_w*2+gap_x; grid_x=px+(pw-grid_w)//2; grid_y=py+88
+        for i,key in enumerate(diff_keys):
+            row=i//2; col=i%2
+            data=DIFFICULTY_DATA[key]
+            x=grid_x+col*(card_w+gap_x); y=grid_y+row*(card_h+gap_y)
+            r=pygame.Rect(x,y,card_w,card_h); self.rects[key]=r
+            active=key==cur; hover=r.collidepoint(*pygame.mouse.get_pos())
+            colr=data["color"]
+            bg=pygame.Surface((card_w,card_h),pygame.SRCALPHA)
+            bg.fill((colr[0]//14,colr[1]//14,colr[2]//14,150 if active else 110))
+            surface.blit(bg,(x,y))
+            glow=pygame.Surface((card_w+18,card_h+18),pygame.SRCALPHA)
+            sel_wave=0.5+0.5*math.sin((t+i*43)*0.012)
+            base_alpha=34+int(26*sel_wave) if active else (20 if hover else 0)
+            if active:
+                for g,ga in [(0,base_alpha+20),(1,base_alpha+10),(2,base_alpha)]:
+                    pygame.draw.rect(glow,(*colr,ga),pygame.Rect(9-g*2,9-g*2,card_w-18+g*4,card_h-18+g*4),border_radius=10,width=2)
+                surface.blit(glow,(x-9,y-9))
+            border_col=GOLD if active else colr if hover else (50,60,86)
+            pygame.draw.rect(surface,border_col,r,border_radius=8,width=3 if active else 2 if hover else 1)
+            if hover and not active:
+                lift=int(2*sel_wave)
+                shadow=pygame.Surface((card_w,card_h),pygame.SRCALPHA); shadow.fill((255,255,255,0))
+                surface.blit(shadow,(x,y-lift))
+            name=font_sm.render(tr(f"difficulty.{key}.name"),True,GOLD if active else colr)
+            surface.blit(name,(x+16,y+12))
+            desc=render_fit(font_xs,tr(f"difficulty.{key}.desc"),TEXT_MUTED,card_w-28)
+            surface.blit(desc,(x+16,y+38))
+            nums=font_xs.render(f"DMG x{data['damage']:.2f}  REWARD x{data['reward']:.2f}",True,TEXT_MAIN)
+            surface.blit(nums,(x+16,y+62))
+            if active:
+                badge_w=92; badge=pygame.Rect(r.right-badge_w-10,r.y+10,badge_w,20)
+                pygame.draw.rect(surface,(GOLD[0]//3,GOLD[1]//3,GOLD[2]//3),badge,border_radius=4)
+                pygame.draw.rect(surface,GOLD,badge,border_radius=4,width=1)
+                bt=font_xs.render(tr("difficulty.selected"),True,GOLD)
+                surface.blit(bt,(badge.centerx-bt.get_width()//2,badge.centery-bt.get_height()//2))
+                cx1,cy1=badge.x+12,badge.y+10
+                pygame.draw.line(surface,GOLD,(cx1-4,cy1),(cx1,cy1+4),2)
+                pygame.draw.line(surface,GOLD,(cx1,cy1+4),(cx1+8,cy1-4),2)
+        btn_w=168; btn_h=36; btn_gap=18; btn_y=py+ph-58
+        total_w=btn_w*2+btn_gap; btn_x=SCREEN_W//2-total_w//2
+        for idx,(action,label,col) in enumerate([("back",tr("difficulty.back"),RED),("close",tr("difficulty.close"),CYAN)]):
+            br=pygame.Rect(btn_x+idx*(btn_w+btn_gap),btn_y,btn_w,btn_h); self.button_rects[action]=br
+            hover=br.collidepoint(*pygame.mouse.get_pos())
+            pulse=0.5+0.5*math.sin((t+idx*120)*0.01)
+            fill=(col[0]//8,col[1]//8,col[2]//8,200)
+            pygame.draw.rect(surface,fill,br,border_radius=6)
+            pygame.draw.rect(surface,(GOLD if hover else col),br,border_radius=6,width=2 if hover else 1)
+            if hover:
+                glow=pygame.Surface((br.w+10,br.h+10),pygame.SRCALPHA)
+                pygame.draw.rect(glow,(*col,25+int(20*pulse)),glow.get_rect(),border_radius=8)
+                surface.blit(glow,(br.x-5,br.y-5))
+            lt=font_xs.render(label,True,WHITE if hover else col)
+            surface.blit(lt,(br.centerx-lt.get_width()//2,br.centery-lt.get_height()//2))
+        hint=font_xs.render(tr("difficulty.footer"),True,TEXT_MUTED)
         surface.blit(hint,(SCREEN_W//2-hint.get_width()//2,py+ph-18))
 
 # ------------------------------------------------------------------------------------
@@ -5797,9 +5856,10 @@ class Shop:
         }
         self.px=SCREEN_W//2-self.PW//2; self.py=SCREEN_H//2-self.PH//2
         self.anim_t=0
+        self.scroll_offset=0
 
     def open(self,player_coins,player=None):
-        self.active=True; self.coins=player_coins; self.player_ref=player; self.anim_t=0
+        self.active=True; self.coins=player_coins; self.player_ref=player; self.anim_t=0; self.scroll_offset=0
 
     def close(self):
         self.active=False
@@ -5821,6 +5881,33 @@ class Shop:
 
     def get_upgrades_dict(self):
         return {k:v["level"] for k,v in self.upgrades.items()}
+
+    def _scroll_metrics(self):
+        content_top=self.py+148
+        viewport_h=self.PH-176
+        if self.mode=="upgrades":
+            rows=(len(self.upgrades)+1)//2; card_h=86; gap=12; start_rel=16
+            content_h=start_rel+rows*card_h+max(0,rows-1)*gap
+        elif self.mode in ("skins","pet"):
+            rows=(len(SKINS if self.mode=="skins" else PET_DATA)+1)//2; card_h=90; gap=14; start_rel=7
+            content_h=start_rel+rows*card_h+max(0,rows-1)*gap
+            if self.mode=="pet":
+                content_h=max(content_h, self.PH-148)
+        elif self.mode=="special":
+            rows=(len(SHOP_WEAPON_POOL)+1)//2; card_h=96; gap=14; start_rel=27
+            content_h=start_rel+rows*card_h+max(0,rows-1)*gap
+        else:
+            content_h=viewport_h
+        max_scroll=max(0,content_h-viewport_h)
+        return content_top, viewport_h, content_h, max_scroll
+
+    def _handle_scroll_event(self,event):
+        delta=scroll_delta_from_event(event)
+        if delta==0: return False
+        _,_,_,max_scroll=self._scroll_metrics()
+        if max_scroll<=0: return False
+        self.scroll_offset=apply_scroll_wheel(self.scroll_offset,delta,max_scroll,44)
+        return True
 
     def _draw_tab(self,surface,font_sm,key,label,i,total_w,start_x,tw,tg):
         r=pygame.Rect(start_x+i*(tw+tg),self.py+108,tw,30)
@@ -5910,11 +5997,12 @@ class Shop:
             surface.blit(mt,(x+cw-12-mt.get_width(),y+ch-22))
         return cr
 
-    def _draw_upgrades_tab(self,surface,font_sm,font_xs,t):
+    def _draw_upgrades_tab(self,surface,font_sm,font_xs,t,scroll_y=0):
         px,py=self.px,self.py; pw=self.PW; mx,my=pygame.mouse.get_pos()
         cw=(pw-72)//2; ch=86; gap=12; start_y=py+164
         sec_t=font_xs.render(tr("shop.tab.upgrades"),True,NEON_CYAN)
         surface.blit(sec_t,(px+24,py+148))
+        start_y+=scroll_y
         for i,(key,upg) in enumerate(self.upgrades.items()):
             col=i%2; row=i//2
             x=px+24+col*(cw+gap); y=start_y+row*(ch+gap)
@@ -5936,7 +6024,7 @@ class Shop:
             if not level_info["is_max"]:
                 upg["btn_rect"]=btn_r
 
-    def _draw_skins(self,surface,font_sm,font_xs,t):
+    def _draw_skins(self,surface,font_sm,font_xs,t,scroll_y=0):
         player=self.player_ref
         owned=getattr(player,"owned_skins",{"classic"}) if player else {"classic"}
         current=getattr(player,"skin","classic") if player else "classic"
@@ -5944,6 +6032,7 @@ class Shop:
         px,py=self.px,self.py; pw=self.PW
         cw=(pw-70)//2; ch=90; gap=14; start_y=py+155
         mx,my=pygame.mouse.get_pos()
+        start_y+=scroll_y
         for i,(skin_key,skin) in enumerate(SKINS.items()):
             col=i%2; row=i//2
             x=px+24+col*(cw+gap); y=start_y+row*(ch+gap)
@@ -6010,7 +6099,7 @@ class Shop:
             surface.blit(nm,(x+6,y+28))
             surface.blit(lb,(x+6,y+44))
 
-    def _draw_pets(self,surface,font_sm,font_xs,t):
+    def _draw_pets(self,surface,font_sm,font_xs,t,scroll_y=0):
         player=self.player_ref
         owned=getattr(player,"owned_pets",set()) if player else set()
         equipped=getattr(player,"equipped_pet","") if player else ""
@@ -6021,6 +6110,7 @@ class Shop:
         preview_key=None
         sec_t=font_sm.render(tr("shop.tab.pet"),True,YELLOW)
         surface.blit(sec_t,(px+24,py+150))
+        start_y+=scroll_y
         for i,(pkey,pet) in enumerate(PET_DATA.items()):
             col=i%2; row=i//2
             x=px+24+col*(cw+gap); y=start_y+row*(ch+gap)
@@ -6066,7 +6156,7 @@ class Shop:
             pn=render_fit(font_xs,preview["name"],WHITE,ppw-12)
             surface.blit(pn,(pp_x+6,pp_y+72))
 
-    def _draw_special(self,surface,font_sm,font_xs,t):
+    def _draw_special(self,surface,font_sm,font_xs,t,scroll_y=0):
         player=self.player_ref
         owned_weapons=set(getattr(player,"weapons",["laser"])) if player else {"laser"}
         self.shop_weapon_rects={}
@@ -6075,6 +6165,7 @@ class Shop:
         cw=(pw-70)//2; ch=96; gap=14; start_y=py+155
         sec_t=font_sm.render(tr("shop.shop_weapons"),True,NEON_ORANGE)
         surface.blit(sec_t,(px+24,py+150))
+        start_y+=scroll_y
         for i,w_key in enumerate(SHOP_WEAPON_POOL):
             w=WEAPONS[w_key]; col=i%2; row=i//2
             x=px+24+col*(cw+gap); y=start_y+row*(ch+gap)+20
@@ -6141,13 +6232,32 @@ class Shop:
                        "weapon":self._draw_weapon_shop,"pet":self._draw_pets,"special":self._draw_special}
         handler=tab_handlers.get(self.mode)
         if handler:
-            handler(surface,font_sm,font_xs,t)
+            content_top,viewport_h,content_h,max_scroll=self._scroll_metrics()
+            self.scroll_offset=clamp_scroll_offset(self.scroll_offset,max_scroll)
+            content_clip=pygame.Rect(px+18,content_top,pw-36,viewport_h)
+            old_clip=surface.get_clip(); surface.set_clip(content_clip)
+            scroll_y=-self.scroll_offset
+            if self.mode=="weapon":
+                handler(surface,font_sm,font_xs,t)
+            else:
+                handler(surface,font_sm,font_xs,t,scroll_y)
+            surface.set_clip(old_clip)
+            if max_scroll>0:
+                track_x=px+pw-14; track_y=content_top; track_h=max(1,viewport_h)
+                thumb_h=max(22,int(track_h*viewport_h/max(1,content_h)))
+                thumb_h=min(track_h,thumb_h)
+                thumb_y=track_y+int((track_h-thumb_h)*(self.scroll_offset/max(1,max_scroll)))
+                pygame.draw.rect(surface,(24,28,44),(track_x,track_y,4,track_h),border_radius=2)
+                pygame.draw.rect(surface,NEON_CYAN,(track_x,thumb_y,4,thumb_h),border_radius=2)
         esc_t=font_xs.render(tr("shop.close_hint"),True,TEXT_MUTED)
         surface.blit(esc_t,(SCREEN_W//2-esc_t.get_width()//2,py+ph-12))
 
     def handle_event(self,event,player):
         if not self.active: return False
         mx,my=pygame.mouse.get_pos()
+
+        if self._handle_scroll_event(event):
+            return False
 
         if event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE:
             self.close(); return True
@@ -6158,7 +6268,7 @@ class Shop:
 
             for mode,rect in self.tab_rects.items():
                 if rect.collidepoint(mx,my):
-                    self.mode=mode; sounds.play("ui_click"); return True
+                    self.mode=mode; self.scroll_offset=0; sounds.play("ui_click"); return True
 
             if self.mode=="skins":
                 for skin_key,rect in self.skin_rects.items():
@@ -7220,6 +7330,7 @@ boss=None; boss_spawned=False; waiting_for_dialogue=False
 level_clear=False; level_clear_timer=0
 boss_x_world=2850
 active_boss_data=dict(BOSS_DATA[1])
+ending_phase="destruction"; ending_timer=0; ending_scroll=0.0; ending_core_pos=(CX,260); ending_enemy_count=0
 moving_plats=[]; spike_traps=[]; tunnels=[]; fly_zones=[]; facility_sections=[]; water_zones=[]
 session_kills=0; session_stats={}; show_save_screen=False; show_new_game_name_input=False; show_difficulty_select=False; confirm_overwrite_file=""; confirm_delete_file=""; current_save_file=""; play_time_accum=0
 boss_rush_active=False; boss_rush_wave=0; boss_rush_score=0; boss_rush_bosses=[]; boss_rush_arena_x=0; boss_rush_seed=0; show_boss_rush_select=False; show_boss_rush_open_t=0; boss_rush_max_waves=0; boss_rush_combo=0; boss_rush_mult=1; boss_rush_selected=[True]*10
@@ -7849,19 +7960,220 @@ def do_load(slot=None):
     boss=None; boss_spawned=False; waiting_for_dialogue=False; level_clear=False
     transition_to("playing")
 
+def format_play_time(seconds):
+    seconds=max(0,int(seconds))
+    hours=seconds//3600; mins=(seconds%3600)//60
+    if current_language()=="id":
+        if hours>0: return f"{hours} Jam {mins} Menit"
+        return f"{mins} Menit"
+    if hours>0: return f"{hours}h {mins}m"
+    return f"{mins}m"
+
+def difficulty_display_name():
+    diff=current_difficulty()
+    names={"easy":"Easy","normal":"Normal","hard":"Hard","nightmare":"Nightmare"}
+    if current_language()=="id":
+        names={"easy":"Mudah","normal":"Normal","hard":"Sulit","nightmare":"Nightmare"}
+    return names.get(diff,diff.title())
+
+def completion_percent():
+    if save_data.get("completed",False): return "100%"
+    return f"{int(min(99,max(0,(level/max(1,len(LEVEL_ORDER)))*100)))}%"
+
+def scroll_delta_from_event(event):
+    if event.type==pygame.MOUSEWHEEL:
+        return int(event.y)
+    if event.type==pygame.MOUSEBUTTONDOWN:
+        if event.button==4: return 1
+        if event.button==5: return -1
+    return 0
+
+def clamp_scroll_offset(offset,max_scroll):
+    return max(0,min(max_scroll,int(offset)))
+
+def clamp_value(value,min_value,max_value):
+    return max(min_value,min(max_value,value))
+
+def apply_scroll_wheel(offset,delta,max_scroll,step=50):
+    if delta==0 or max_scroll<=0:
+        return clamp_scroll_offset(offset,max_scroll)
+    return clamp_scroll_offset(offset-delta*step,max_scroll)
+
+def save_menu_scroll_metrics():
+    pw,ph=580,500; px_s=CX-pw//2; py_s=SCREEN_H//2-ph//2
+    info_y=py_s+50; slot_card_h=112; slot_gap=14; slot_start_y=info_y+14
+    list_x=px_s+16; list_top=slot_start_y; list_bottom=py_s+ph-44
+    list_h=max(0,list_bottom-list_top)
+    list_rect=pygame.Rect(list_x,list_top,pw-32,list_h)
+    content_step=slot_card_h+slot_gap
+    content_h=max(0,len(list_save_files())*content_step-slot_gap)
+    return list_rect,list_top,list_h,content_h
+
+def ending_credit_scroll_bounds():
+    total_h=sum(line[3] for line in ending_credit_lines())
+    return -total_h-40, SCREEN_H+50
+
+def ending_credit_lines():
+    return [
+        ("PIXEL GLIDE",font_lg,CYAN,34),
+        (tr("credits.created_by"),font_sm,TEXT_MUTED,26),
+        ("Shaniss Ambotang Avila",font_md,WHITE,38),
+        (tr("credits.university"),font_sm,TEXT_MAIN,42),
+        (tr("credits.supervisor"),font_sm,TEXT_MUTED,26),
+        (tr("credits.supervisor_name"),font_md,WHITE,42),
+        (tr("credits.powered_by"),font_sm,TEXT_MUTED,26),
+        ("Python",font_md,CYAN,30),
+        ("Pygame",font_md,CYAN,44),
+        (tr("credits.thanks"),font_sm,TEXT_MUTED,30),
+        (tr("credits.family"),font_md,WHITE,28),
+        (tr("credits.friends"),font_md,WHITE,28),
+        (tr("credits.universitas"),font_md,WHITE,52),
+        (tr("credits.thank_you"),font_lg,GOLD,60),
+    ]
+
+def ending_stats_items():
+    sd=save_data
+    play_seconds=sd.get("play_time",0)+play_time_accum
+    return [
+        (tr("ending.difficulty"),difficulty_display_name(),CYAN),
+        (tr("ending.play_time"),format_play_time(play_seconds),TEXT_MAIN),
+        (tr("ending.deaths"),str(sd.get("total_deaths",0)),ORANGE),
+        (tr("ending.coins"),str(sd.get("total_coins",0)),GOLD),
+        (tr("ending.enemies"),str(ending_enemy_count),RED),
+        (tr("ending.bosses"),str(sd.get("bosses_defeated",0)),PINK),
+        (tr("ending.completion"),completion_percent(),GREEN),
+    ]
+
+def start_ending_sequence():
+    global ending_phase,ending_timer,ending_scroll,ending_core_pos,level_clear
+    bx=CX; by=250
+    if boss:
+        bx,by=camera.apply(boss.wx+boss.bw//2,boss.wy+boss.bh//2)
+        bx=max(120,min(SCREEN_W-120,int(bx))); by=max(120,min(SCREEN_H-120,int(by)))
+    ending_phase="destruction"; ending_timer=0; ending_scroll=float(SCREEN_H+40); ending_core_pos=(bx,by); level_clear=False
+    sounds.stop_bgm()
+    transition_to("ending")
+
+def update_ending_sequence():
+    global ending_phase,ending_timer,ending_scroll
+    if scene!="ending": return
+    ending_timer+=1
+    if ending_phase=="destruction" and ending_timer>=150:
+        ending_phase="fade"; ending_timer=0
+    elif ending_phase=="fade" and ending_timer>=90:
+        ending_phase="dialogue"; ending_timer=0
+    elif ending_phase=="dialogue" and ending_timer>=270:
+        ending_phase="credits"; ending_timer=0; ending_scroll=float(SCREEN_H+50)
+    elif ending_phase=="credits":
+        min_scroll,max_scroll=ending_credit_scroll_bounds()
+        ending_scroll=clamp_value(ending_scroll-0.72,min_scroll,max_scroll)
+        if ending_scroll<=min_scroll:
+            ending_phase="stats"; ending_timer=0
+
+def skip_ending_credits():
+    global ending_phase,ending_timer
+    if ending_phase=="credits":
+        ending_phase="stats"; ending_timer=0
+
+def scroll_ending_credits(delta):
+    global ending_scroll
+    if ending_phase!="credits" or delta==0: return False
+    min_scroll,max_scroll=ending_credit_scroll_bounds()
+    ending_scroll=clamp_value(ending_scroll-delta*44,min_scroll,max_scroll)
+    return True
+
+def handle_global_scroll_event(event):
+    global save_scroll_offset
+    delta=scroll_delta_from_event(event)
+    if delta==0: return False
+    if scene=="ending" and ending_phase=="credits":
+        return scroll_ending_credits(delta)
+    if scene=="menu" and show_save_screen:
+        mx,my=pygame.mouse.get_pos()
+        list_rect,_,list_h,content_h=save_menu_scroll_metrics()
+        if not list_rect.collidepoint(mx,my): return False
+        max_scroll=max(0,content_h-list_h)
+        save_scroll_offset=apply_scroll_wheel(save_scroll_offset,delta,max_scroll,50)
+        return True
+    if shop.active:
+        return shop._handle_scroll_event(event)
+    return False
+
+def draw_corex_destruction(surface,t):
+    cx,cy=ending_core_pos; prog=min(1.0,ending_timer/150)
+    pulse=int(80+120*math.sin(t*0.018)**2)
+    for r in range(180,20,-32):
+        a=max(0,int((1-prog)*55-r*0.08))
+        if a>0:
+            ring=pygame.Surface((r*2,r*2),pygame.SRCALPHA)
+            pygame.draw.circle(ring,(80,230,220,a),(r,r),r,2)
+            surface.blit(ring,(cx-r,cy-r))
+    for i in range(42):
+        ang=i*math.tau/42+t*0.0015
+        dist=28+prog*260+18*math.sin(t*0.006+i)
+        x=int(cx+math.cos(ang)*dist); y=int(cy+math.sin(ang)*dist*0.55)
+        col=random.choice([CYAN,RED,ORANGE,YELLOW,WHITE]) if i%7==0 else (80,pulse,220)
+        pygame.draw.rect(surface,col,(x,y,3+(i%3),3+(i%2)))
+    core_r=max(4,int(42*(1-prog)))
+    if core_r>4:
+        pygame.draw.circle(surface,(20,20,60),(cx,cy),core_r)
+        pygame.draw.circle(surface,CYAN,(cx,cy),core_r,2)
+        pygame.draw.line(surface,RED,(cx-core_r,cy),(cx+core_r,cy),2)
+        pygame.draw.line(surface,RED,(cx,cy-core_r),(cx,cy+core_r),2)
+    draw_text(surface,tr("ending.title"),font_lg,CX,82,CYAN,center=True)
+
+def draw_ending_dialogue(surface,t):
+    draw_text(surface,tr("ending.title"),font_lg,CX,96,CYAN,center=True)
+    lines=[tr("ending.line1"),tr("ending.line2"),tr("ending.line3")]
+    for i,line in enumerate(lines):
+        alpha=min(255,max(0,(ending_timer-i*42)*6))
+        txt=font_sm.render(line,True,TEXT_MAIN); txt.set_alpha(alpha)
+        surface.blit(txt,(CX-txt.get_width()//2,190+i*42))
+    score_txt=font_md.render(tr("ending.score",score=score),True,YELLOW); score_txt.set_alpha(min(255,max(0,(ending_timer-120)*5)))
+    surface.blit(score_txt,(CX-score_txt.get_width()//2,355))
+
+def draw_ending_credits(surface):
+    y=ending_scroll
+    for text,font,col,gap in ending_credit_lines():
+        img=font.render(text,True,col)
+        surface.blit(img,(CX-img.get_width()//2,int(y)))
+        y+=gap
+    draw_text(surface,tr("ending.skip"),font_xs,18,SCREEN_H-28,TEXT_MUTED,shadow=False)
+    hint=font_xs.render(tr("ending.back"),True,TEXT_MUTED); surface.blit(hint,(SCREEN_W-hint.get_width()-18,SCREEN_H-28))
+
+def draw_ending_stats(surface):
+    draw_text(surface,tr("ending.stats_title"),font_lg,CX,70,CYAN,center=True)
+    draw_text(surface,tr("ending.score",score=score),font_md,CX,122,YELLOW,center=True)
+    items=ending_stats_items(); y=172; row_h=44; left_x=186; right_x=SCREEN_W-186
+    for idx,(label,value,col) in enumerate(items):
+        draw_text(surface,label,font_sm,left_x,y,TEXT_MUTED,shadow=False)
+        img=render_fit(font_sm,value,col,260)
+        surface.blit(img,(right_x-img.get_width(),y))
+        if idx<len(items)-1:
+            pygame.draw.line(surface,(25,35,55),(left_x-4,y+26),(right_x,y+26),1)
+        y+=row_h
+    draw_text(surface,tr("ending.back"),font_sm,CX,520,WARNING_TEXT,center=True)
+
 def finish_game():
-    global level_clear, session_kills, current_save_file, play_time_accum
-    if not current_save_file: return
+    global level_clear, session_kills, current_save_file, play_time_accum, ending_enemy_count
+    if not current_save_file:
+        ending_enemy_count=session_kills
+        save_data["completed"]=True
+        start_ending_sequence()
+        return
     sd=load_save(current_save_file); sd["has_save"]=True
     sd["timestamp"]=datetime.now().isoformat()
     if play_time_accum>0: sd["play_time"]=sd.get("play_time",0)+play_time_accum
+    play_time_accum=0
+    ending_enemy_count=session_kills
     if score>sd["high_score"]: sd["high_score"]=score
     if level>sd["best_level"]: sd["best_level"]=level
     sd["last_level"]=len(LEVEL_ORDER); sd["last_checkpoint"]=len(LEVEL_ORDER)
+    sd["completed"]=True
     sd["money"]=money; sd["shop_upgrades"]=get_shop_upgrade_levels(); sd["total_kills"]+=session_kills
     if write_save(current_save_file,sd):
         save_data.update(sd); session_kills=0
-    level_clear=False; transition_to("ending"); sounds.stop_bgm()
+    level_clear=False; start_ending_sequence()
 
 # ------------------------------------------------------------------------------------
 # HUD DESIGN CONSTANTS
@@ -8414,6 +8726,9 @@ while running:
             stats_screen.handle_event(event)
             continue
 
+        if handle_global_scroll_event(event):
+            continue
+
         if shop.active:
             debug_print(f"[EVENT] shop.active=True scene={scene}")
             shop_handled=shop.handle_event(event,player)
@@ -8539,8 +8854,13 @@ while running:
                         if not handled and back_btn and back_btn.collidepoint(event.pos):
                             show_save_screen=False; confirm_delete_file=""; rename_file=""
                             handled=True
-                if event.type==pygame.MOUSEWHEEL and show_save_screen:
-                    save_scroll_offset=max(0,save_scroll_offset-event.y*50)
+                scroll_delta=scroll_delta_from_event(event)
+                if scroll_delta and show_save_screen:
+                    list_rect,_,list_h,content_h=save_menu_scroll_metrics()
+                    max_scroll=max(0,content_h-list_h)
+                    if list_rect.collidepoint(mx,my):
+                        save_scroll_offset=apply_scroll_wheel(save_scroll_offset,scroll_delta,max_scroll,50)
+                        handled=True
                 if not handled and rename_file and event.type==pygame.KEYDOWN:
                     if event.key==pygame.K_RETURN:
                         if rename_input.strip():
@@ -8564,7 +8884,7 @@ while running:
                     ch=event.text
                     if ch and len(rename_input)<60 and ch.isprintable() and ch not in '\\/:*?"<>|':
                         rename_input+=ch; handled=True
-                elif not handled and event.type in(pygame.KEYDOWN,pygame.MOUSEBUTTONDOWN):
+                elif not handled and (event.type==pygame.KEYDOWN or (event.type==pygame.MOUSEBUTTONDOWN and event.button==1)):
                     if not rename_file and not confirm_delete_file:
                         show_save_screen=False
             elif show_difficulty_select:
@@ -8718,8 +9038,14 @@ while running:
                 respawn()
 
         if scene=="ending":
-            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
-                transition_to("menu")
+            scroll_delta=scroll_delta_from_event(event)
+            if scroll_delta and scroll_ending_credits(scroll_delta):
+                continue
+            if event.type==pygame.KEYDOWN:
+                if event.key==pygame.K_SPACE:
+                    skip_ending_credits()
+                elif event.key==pygame.K_RETURN:
+                    transition_to("menu")
 
         if event.type==pygame.MOUSEBUTTONDOWN:
             print(f"[EVENT] MOUSEBUTTONDOWN scene={scene} pos={event.pos}")
@@ -9141,6 +9467,10 @@ while running:
                 if mission_state and mission_state.get("timer",0)>0: mission_state["timer"]-=1
                 update_respawn_spot()
                 if boss and not boss.alive and not level_clear:
+                    if is_final_boss_level(level):
+                        score += 1000 * level
+                        finish_game()
+                        continue
                     level_clear = True
                     level_clear_timer = 160
                     sounds.play("level_clear")
@@ -9193,7 +9523,8 @@ while running:
             screen_fade = 255
             screen_fade_dir = -1
             screen_fade = 255
-            screen_fade_dir = -1
+
+    update_ending_sequence()
 
     # -- BGM auto-switch ------------------------
     if scene == "menu":
@@ -9237,7 +9568,7 @@ while running:
         if overlays_blocking:
             screen.fill(DARK_BLUE)
             starfield.draw(screen,0)
-            print(f"[DRAW] overlays_blocking=True ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ starfield only")
+            print("[DRAW] overlays_blocking=True -> starfield only")
         elif scene=="menu":
             print(f"[DRAW] menu scene={scene} overlays_blocking={overlays_blocking}")
             screen.fill(DARK_BLUE)
@@ -9258,21 +9589,22 @@ while running:
             pygame.draw.rect(screen,CYAN,(px_s,py_s,pw,3),border_radius=8)
             draw_text(screen,tr("save.title"),font_lg,CX,py_s+14,CYAN,center=True)
             pygame.draw.line(screen,PANEL_BORDER,(px_s+40,py_s+50),(px_s+pw-40,py_s+50),1)
-            info_y=py_s+50; slot_card_h=112; slot_gap=10; slot_start_y=info_y+14
+            info_y=py_s+50; slot_card_h=112; slot_gap=14; slot_start_y=info_y+14
             play_btns=[]; rename_btns=[]; dup_btns=[]; del_btns=[]; save_file_names=[]
             yes_btn=no_btn=None
-            clip_rect=pygame.Rect(px_s,slot_start_y,pw,slot_start_y+ph-36)
+            clip_rect,list_top,visible_area_h,content_h=save_menu_scroll_metrics()
+            list_x=clip_rect.x; list_w=clip_rect.w
             old_clip=screen.get_clip(); screen.set_clip(clip_rect)
             sf=list_save_files()
-            visible_area_h=ph-(slot_start_y-py_s)-36
-            max_scroll=max(0,len(sf)*(slot_card_h+slot_gap)-visible_area_h)
-            save_scroll_offset=min(save_scroll_offset,max_scroll)
+            content_step=slot_card_h+slot_gap
+            max_scroll=max(0,content_h-visible_area_h)
+            save_scroll_offset=clamp_scroll_offset(save_scroll_offset,max_scroll)
             for si,fd in enumerate(sf):
                 fname=fd["filename"]
-                sy=slot_start_y+si*(slot_card_h+slot_gap)-save_scroll_offset
-                if sy+slot_card_h<slot_start_y: continue
-                if sy>slot_start_y+visible_area_h: continue
-                sr=pygame.Rect(px_s+20,sy,pw-40,slot_card_h)
+                sy=list_top+si*content_step-save_scroll_offset
+                if sy+slot_card_h<list_top: continue
+                if sy>list_top+visible_area_h: continue
+                sr=pygame.Rect(list_x+4,sy,list_w-8,slot_card_h)
                 save_file_names.append(fname)
                 sd_slot=fd["data"]
                 has=bool(sd_slot.get("has_save",False))
@@ -9326,12 +9658,18 @@ while running:
             screen.set_clip(old_clip)
             if len(sf)>3:
                 scroll_bar_x=px_s+pw-8; scroll_bar_h=visible_area_h
-                scroll_bar_y=slot_start_y
-                bar_h=max(20,scroll_bar_h*visible_area_h//((len(sf))*(slot_card_h+slot_gap)))
-                bar_y=scroll_bar_y+(scroll_bar_h-bar_h)*save_scroll_offset//max(1,max_scroll)
+                scroll_bar_y=list_top
+                track_h=max(1,scroll_bar_h)
+                if max_scroll<=0:
+                    bar_h=track_h
+                    bar_y=scroll_bar_y
+                else:
+                    bar_h=max(20,int(track_h*visible_area_h/max(1,content_h)))
+                    bar_h=min(track_h,bar_h)
+                    bar_y=scroll_bar_y+int((track_h-bar_h)*(save_scroll_offset/max_scroll))
                 pygame.draw.rect(screen,(40,40,50),(scroll_bar_x,scroll_bar_y,4,scroll_bar_h),border_radius=2)
                 pygame.draw.rect(screen,(100,140,200),(scroll_bar_x,bar_y,4,bar_h),border_radius=2)
-            back_btn=pygame.Rect(CX-70,slot_start_y+visible_area_h-4,140,30)
+            back_btn=pygame.Rect(CX-70,py_s+ph-36,140,30)
             bs3=pygame.Surface((back_btn.w,back_btn.h),pygame.SRCALPHA); bs3.fill((*PURPLE[:3],50))
             screen.blit(bs3,back_btn.topleft)
             pygame.draw.rect(screen,PURPLE,back_btn,border_radius=4,width=1)
@@ -9386,10 +9724,10 @@ while running:
             screen.blit(panel,(px,py))
             pygame.draw.rect(screen,(*CYAN,int(155*fade)),(px,py,pw,ph),border_radius=10,width=1)
             pygame.draw.rect(screen,(*CYAN,int(155*fade)),(px,py,pw,3),border_radius=10)
-            draw_text(screen,"PILIH DIFFICULTY",font_lg,CX,py+22,CYAN,center=True)
+            draw_text(screen,tr("difficulty.title"),font_lg,CX,py+22,CYAN,center=True)
             pygame.draw.line(screen,PANEL_BORDER,(px+35,py+54),(px+pw-35,py+54),1)
             df_rects={}
-            card_data=[("easy","Easy",CYAN,"More HP  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  More Coins  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Easier enemies"),("normal","Normal",BLUE,"Standard gameplay experience"),("hard","Hard",ORANGE,"Stronger enemies  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Faster enemies"),("nightmare","Nightmare",RED,"Elite enemies  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  Hard bosses  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢  More hazards")]
+            card_data=[("easy",tr("difficulty.easy.name"),CYAN,tr("difficulty.easy.desc")),("normal",tr("difficulty.normal.name"),BLUE,tr("difficulty.normal.desc")),("hard",tr("difficulty.hard.name"),ORANGE,tr("difficulty.hard.desc")),("nightmare",tr("difficulty.nightmare.name"),RED,tr("difficulty.nightmare.desc"))]
             for i,(key,label,col,desc) in enumerate(card_data):
                 cy=py+70+i*82; cr=pygame.Rect(px+30,cy,pw-60,74); df_rects[key]=cr; active=key==selected_difficulty
                 if active:
@@ -9401,7 +9739,7 @@ while running:
                 pygame.draw.rect(screen,(20,24,38),cr,border_radius=6)
                 pygame.draw.rect(screen,col if active else (40,45,62),cr,border_radius=6,width=2 if active else 1)
                 if active:
-                    tri=font_sm.render("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶",True,col)
+                    tri=font_sm.render("*",True,col)
                     screen.blit(tri,(cr.x+12,cr.y+10))
                     nx=cr.x+34
                 else:
@@ -9412,7 +9750,7 @@ while running:
             bw,bh=130,30; bg=16; tw=bw*2+bg; bx=CX-tw//2; by=py+ph-50
             back_r=pygame.Rect(bx,by,bw,bh); lanjut_r=pygame.Rect(bx+bw+bg,by,bw,bh)
             save_screen_data["df_back_btn"]=back_r; save_screen_data["df_lanjut_btn"]=lanjut_r
-            for br,btxt,bcol in[(back_r,"KEMBALI",RED),(lanjut_r,"LANJUT  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶",CYAN)]:
+            for br,btxt,bcol in[(back_r,tr("difficulty.back"),RED),(lanjut_r,tr("difficulty.next"),CYAN)]:
                 hv=br.collidepoint(mx,my)
                 hr=br.inflate(4*hv,4*hv)
                 bs=pygame.Surface((hr.w,hr.h),pygame.SRCALPHA); bs.fill((*bcol,35+25*hv))
@@ -9900,16 +10238,22 @@ while running:
 
         elif scene=="ending":
             print(f"[DRAW] ending scene={scene}")
-            screen.fill((3,5,18)); starfield.draw(screen,0)
-            ov=get_cached_surface("ending_ov",SCREEN_W,SCREEN_H); ov.fill((0,0,0,150)); screen.blit(ov,(0,0))
-            ending_title=tr("ending.title")
-            draw_glitch_text(screen,ending_title,font_lg,CX-font_lg.size(ending_title)[0]//2,110,CYAN,t)
-            lines=[tr("ending.line1"),tr("ending.line2"),tr("ending.line3")]
-            for i,line in enumerate(lines):
-                draw_text(screen,line,font_sm,CX,190+i*34,TEXT_MAIN,center=True)
-            draw_text(screen,tr("ending.score",score=score),font_md,CX,330,YELLOW,center=True)
-            draw_text(screen,tr("ending.back"),font_sm,CX,420,WARNING_TEXT,center=True)
-            draw_g7(screen,CX-16,470,False,0,True,0,0)
+            screen.fill((1,2,9)); starfield.draw(screen,0)
+            ov=get_cached_surface("ending_ov",SCREEN_W,SCREEN_H); ov.fill((0,0,0,175)); screen.blit(ov,(0,0))
+            if ending_phase=="destruction":
+                draw_corex_destruction(screen,t)
+            elif ending_phase=="fade":
+                fade_alpha=min(255,int(ending_timer/90*255))
+                black=get_cached_surface("ending_black",SCREEN_W,SCREEN_H); black.fill((0,0,0,fade_alpha)); screen.blit(black,(0,0))
+            elif ending_phase=="dialogue":
+                black=get_cached_surface("ending_black_full",SCREEN_W,SCREEN_H); black.fill((0,0,0,235)); screen.blit(black,(0,0))
+                draw_ending_dialogue(screen,t)
+            elif ending_phase=="credits":
+                black=get_cached_surface("ending_credit_bg",SCREEN_W,SCREEN_H); black.fill((0,0,0,230)); screen.blit(black,(0,0))
+                draw_ending_credits(screen)
+            elif ending_phase=="stats":
+                black=get_cached_surface("ending_stats_bg",SCREEN_W,SCREEN_H); black.fill((0,0,0,225)); screen.blit(black,(0,0))
+                draw_ending_stats(screen)
 
         if story_intro.active:
             print(f"[DRAW] story_intro overlay (active=True)")

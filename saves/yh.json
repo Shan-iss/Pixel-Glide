@@ -2,12 +2,12 @@
   "high_score": 329906,
   "best_level": 14,
   "total_plays": 19,
-  "total_kills": 2758866203577,
-  "bosses_defeated": 15,
+  "total_kills": 16553197221512,
+  "bosses_defeated": 16,
   "last_level": 13,
   "last_checkpoint": 13,
   "has_save": true,
-  "money": 57,
+  "money": 106,
   "shop_upgrades": {
     "hp": 5,
     "speed": 1,
@@ -161,8 +161,8 @@
     "lab_08": true,
     "lab_09": true
   },
-  "timestamp": "2026-08-03T03:53:57.380297",
-  "play_time": 89067.56666662697,
+  "timestamp": "2026-08-03T07:46:23.602392",
+  "play_time": 89157.53333329363,
   "save_name": "yh",
   "total_deaths": 42,
   "total_coins": 3977,
@@ -206,5 +206,6 @@
   },
   "world_seed": 4187412374806175825,
   "shake_intensity": 0.7,
-  "particle_density": true
+  "particle_density": true,
+  "completed": true
 }
